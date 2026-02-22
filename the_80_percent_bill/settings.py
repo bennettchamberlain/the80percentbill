@@ -46,6 +46,20 @@ ALLOWED_HOSTS = [
 if extra_hosts := os.environ.get("ALLOWED_HOSTS"):
     ALLOWED_HOSTS.extend(h.strip() for h in extra_hosts.split(",") if h.strip())
 
+# CSRF: required in Django 4+ when serving over HTTPS (e.g. Railway). Origins that may make cross-site requests.
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.railway.app",
+    "https://*.up.railway.app",
+    "https://the80percentbill.com",
+    "https://www.the80percentbill.com",
+]
+if _railway_domain := os.environ.get("RAILWAY_PUBLIC_DOMAIN"):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{_railway_domain}")
+if extra_origins := os.environ.get("CSRF_TRUSTED_ORIGINS"):
+    CSRF_TRUSTED_ORIGINS.extend(o.strip() for o in extra_origins.split(",") if o.strip())
+# When Railway/proxy terminates SSL, Django may see the request as HTTP. Trust X-Forwarded-Proto.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 # Application definition
 

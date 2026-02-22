@@ -148,7 +148,9 @@ If the repo root is not the Django project (e.g. app is in `python/the_80_percen
 
 4. **Generate Domain**: Railway → your service → Settings → Networking → Generate Domain.
 
-5. **Create admin user** after first deploy: Railway → your service → ... → Run Command → `python manage.py createsuperuser`.
+5. **Create admin user** after first deploy: Railway → your service → Run Command → `python manage.py createsuperuser`.
+
+6. **Custom domain?** If you add one, set `CSRF_TRUSTED_ORIGINS=https://yourdomain.com` so pledge forms work.
 
 ---
 
