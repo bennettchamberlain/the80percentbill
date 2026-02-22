@@ -55,51 +55,45 @@ python/the_80_percent_bill/        # Project root (run manage.py from here)
 
 ---
 
-## Setup
+## Dev: quick start
 
-> **Important:** Run all commands from the project root: `cd python/the_80_percent_bill`
+> All commands run from the project root: `cd python/the_80_percent_bill` (or wherever `manage.py` lives)
 
-1. **Virtual environment**
+```bash
+# 1. Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate          # macOS/Linux
+# venv\Scripts\activate          # Windows
 
-   ```bash
-   python -m venv venv
-   source venv/bin/activate   # macOS/Linux. Windows: venv\Scripts\activate
-   ```
+# 2. Install dependencies
+pip install -r requirements.txt
 
-2. **Install dependencies**
+# 3. Set up environment
+cp .env.example .env
+# Edit .env: add GEOCODIO_API_KEY (required). Add SUPABASE_* for Supabase, or leave out for SQLite.
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+# 4. Run migrations
+python manage.py migrate
 
-3. **Configure secrets** — copy `.env.example` to `.env` and fill in:
+# 5. (Optional) Create admin user
+python manage.py createsuperuser
 
-   ```bash
-   cp .env.example .env
-   ```
+# 6. Start the dev server
+python manage.py runserver
+# Or use another port if 8000 is in use: python manage.py runserver 8001
+```
 
-   - `GEOCODIO_API_KEY` — Required for address → congressional district lookup
-   - `SUPABASE_DB_PASSWORD` — If set, pledges are stored in Supabase Postgres (production). Otherwise SQLite (`db.sqlite3`).
+Open **http://127.0.0.1:8000/** (or your chosen port) in your browser.
 
-4. **Migrations**
+### Dev environment variables (`.env`)
 
-   ```bash
-   python manage.py migrate
-   ```
-
-5. **Create admin user** (optional)
-
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-6. **Run the server**
-
-   ```bash
-   python manage.py runserver
-   ```
-
-   Open **http://127.0.0.1:8000/** — Home, Pledge, and Bill pages are available.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GEOCODIO_API_KEY` | Yes | Address → congressional district lookup |
+| `SUPABASE_DB_PASSWORD` | No | If set, uses Supabase. Omit for local SQLite (`db.sqlite3`). |
+| `SUPABASE_DB_HOST` | If using Supabase | Direct: `db.xxx.supabase.co` (local). Pooler: `aws-0-REGION.pooler.supabase.com` (Railway). |
+| `SUPABASE_DB_USER` | If using Supabase | Direct: `postgres`. Pooler: `postgres.PROJECT_REF` |
+| `SUPABASE_USE_POOLER` | No | Set `false` for local (direct/IPv6). Default `true` for Railway (pooler/IPv4). |
 
 ---
 
@@ -112,10 +106,11 @@ python/the_80_percent_bill/        # Project root (run manage.py from here)
    | Variable | Required | Description |
    |----------|----------|-------------|
    | `SUPABASE_DB_PASSWORD` | Yes | Supabase database password |
-   | `SUPABASE_DB_HOST` | Yes | e.g. `db.xxxx.supabase.co` |
+   | `SUPABASE_DB_HOST` | Yes (Railway) | **Use pooler** (IPv4): e.g. `aws-0-us-east-1.pooler.supabase.com` — from Supabase → Connect → Session pooler. Direct `db.xxx.supabase.co` uses IPv6 and fails on Railway. |
+   | `SUPABASE_DB_USER` | Yes (Railway) | **Use pooler user**: `postgres.<PROJECT_REF>` (e.g. `postgres.dugqtfasgcprvqpcktdl`) — from Supabase → Connect → Session pooler |
    | `SUPABASE_DB_NAME` | No | Default: `postgres` |
-   | `SUPABASE_DB_USER` | No | Default: `postgres` |
-   | `SUPABASE_DB_PORT` | No | Default: `5432` |
+   | `SUPABASE_DB_PORT` | No | Default: `5432` (session pooler) |
+   | `SUPABASE_USE_POOLER` | No | Default: `true` — keep true for Railway (IPv4) |
    | `GEOCODIO_API_KEY` | Yes | For address → district lookup |
    | `DJANGO_SECRET_KEY` | Yes (prod) | Random secret; generate a new one for production |
    | `DEBUG` | No | Set to `false` in production |

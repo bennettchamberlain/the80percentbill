@@ -99,17 +99,37 @@ WSGI_APPLICATION = 'the_80_percent_bill.wsgi.application'
 
 _db_password = os.environ.get("SUPABASE_DB_PASSWORD")
 if _db_password:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("SUPABASE_DB_NAME", "postgres"),
-            "USER": os.environ.get("SUPABASE_DB_USER", "postgres"),
-            "PASSWORD": _db_password,
-            "HOST": os.environ.get("SUPABASE_DB_HOST", "db.dugqtfasgcprvqpcktdl.supabase.co"),
-            "PORT": os.environ.get("SUPABASE_DB_PORT", "5432"),
-            "OPTIONS": {"sslmode": "require"},
+    # Use pooler (Supavisor) for IPv4 compatibility — Railway and many hosts lack IPv6.
+    # Direct connection (db.xxx.supabase.co) resolves to IPv6 and fails with "Network unreachable".
+    # Get pooler strings from Supabase Dashboard → Project → Connect → Session or Transaction.
+    _use_pooler = os.environ.get("SUPABASE_USE_POOLER", "true").lower() in ("true", "1", "yes")
+    if _use_pooler:
+        # Session mode (port 5432): IPv4-compatible, supports prepared statements. Best for Django.
+        # User must be postgres.<PROJECT_REF> — get from Supabase Connect → Session pooler.
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": os.environ.get("SUPABASE_DB_NAME", "postgres"),
+                "USER": os.environ.get("SUPABASE_DB_USER", "postgres.dugqtfasgcprvqpcktdl"),
+                "PASSWORD": _db_password,
+                "HOST": os.environ.get("SUPABASE_DB_HOST", "aws-0-us-east-1.pooler.supabase.com"),
+                "PORT": os.environ.get("SUPABASE_DB_PORT", "5432"),
+                "OPTIONS": {"sslmode": "require"},
+            }
         }
-    }
+    else:
+        # Direct connection (IPv6 only — fails on Railway)
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": os.environ.get("SUPABASE_DB_NAME", "postgres"),
+                "USER": os.environ.get("SUPABASE_DB_USER", "postgres"),
+                "PASSWORD": _db_password,
+                "HOST": os.environ.get("SUPABASE_DB_HOST", "db.dugqtfasgcprvqpcktdl.supabase.co"),
+                "PORT": os.environ.get("SUPABASE_DB_PORT", "5432"),
+                "OPTIONS": {"sslmode": "require"},
+            }
+        }
 else:
     DATABASES = {
         "default": {
