@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}The 80% Bill - Read the Bill{% endblock %}
+{% block main_content_class %}bill-page{% endblock %}
+
+{% block content %}
+<h1>The 80% Bill</h1>
+<p><strong>Every article below is supported by at least 80% of American voters.</strong></p>
+<p>Browse the bills, read the details, and click through to Congress.gov for the full legislation.</p>
+
+{% for title, desc, link, note in articles %}
+<div class="article-box">
+    <div class="article-title">{{ title }}</div>
+    <div class="article-desc">{{ desc|linebreaksbr }}</div>
+    {% if note %}
+    <div class="note-text">{{ note }}</div>
+    {% endif %}
+    <a href="{{ link }}" target="_blank" rel="noopener noreferrer" class="bill-link">🏛️ Read the Bill</a>
+</div>
+{% endfor %}
+{% endblock %}

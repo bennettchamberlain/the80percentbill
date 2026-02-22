@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}The 80% Bill{% endblock %}</title>
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'logo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+</head>
+<body>
+    <header class="app-bar" aria-label="Main navigation">
+        <button type="button" class="app-bar-menu-btn" onclick="document.body.classList.toggle('sidebar-open')" aria-label="Toggle menu">
+            <span class="app-bar-menu-icon">≡</span>
+        </button>
+    </header>
+    <div class="sidebar-backdrop" onclick="document.body.classList.remove('sidebar-open')" aria-hidden="true"></div>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-content">
+                <img src="{% static 'logo.png' %}" alt="The 80% Bill" class="sidebar-logo">
+                <hr class="sidebar-divider">
+                <button type="button" class="sidebar-btn sidebar-btn-disabled" disabled title="Coming soon">
+                    📊 View anonymized data by district <span class="coming-soon">(coming soon)</span>
+                </button>
+                <hr class="sidebar-divider">
+                <h3 class="sidebar-heading">Support the Project</h3>
+                <a href="{{ donation_link }}" target="_blank" rel="noopener noreferrer" class="donate-btn">
+                    ☕ Buy me a Coffee ($5)
+                </a>
+            </div>
+        </aside>
+        <main class="main-content {% block main_content_class %}{% endblock %}">
+            <div class="main-content-inner">
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

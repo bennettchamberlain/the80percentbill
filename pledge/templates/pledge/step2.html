@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}The 80% Bill - Sign the Pledge{% endblock %}
+{% block main_content_class %}pledge-page{% endblock %}
+
+{% block content %}
+<h1>The 80% Bill</h1>
+<hr>
+<div class="alert alert-info">
+    <strong>Pledge:</strong> By completing this form, I state that I will not vote for anyone who does not actively support this bill.
+</div>
+
+<div class="pledge-form">
+    <div class="alert alert-success">You are in <strong>{{ district }}</strong> represented by <strong>{{ rep }}</strong>.</div>
+
+    <form method="post" style="margin-bottom: 1rem;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="back">
+        <button type="submit" class="btn btn-secondary">Wrong District? Change it.</button>
+    </form>
+
+    <h2>Step 2: Sign the Pledge</h2>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="submit">
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <button type="submit" class="btn">I will not vote for anyone who does not support this bill, unaltered</button>
+    </form>
+</div>
+{% endblock %}

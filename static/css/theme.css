@@ -1,0 +1,560 @@
+/* === The 80% Bill - Design Tokens === */
+:root {
+    --blue-primary: #1E3A5F;
+    --blue-hover: #2c5282;
+    --red-accent: #C41E3A;
+    --red-hover: #a01830;
+    --white: #FFFFFF;
+    --gray-light: #F7F8FA;
+    --gray-text: #4A5568;
+    --gray-border: #E2E8F0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background-color: var(--white);
+    color: var(--gray-text);
+}
+
+/* === App Bar (mobile only) === */
+.app-bar {
+    display: none;
+}
+
+/* === Sidebar === */
+.sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: linear-gradient(180deg, var(--blue-primary) 0%, #152a47 100%);
+    padding: 1.5rem 1rem;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar-content {
+    position: sticky;
+    top: 1rem;
+}
+
+.sidebar-logo {
+    width: 100%;
+    max-width: 260px;
+    height: auto;
+    display: block;
+}
+
+.sidebar-heading {
+    color: var(--white) !important;
+    font-size: 1rem;
+    margin: 0 0 0.75rem 0;
+}
+
+.sidebar-btn {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--white);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sidebar-btn-disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.sidebar-btn-disabled .coming-soon {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.sidebar-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    margin: 1rem 0;
+}
+
+.donate-btn {
+    display: inline-block;
+    background-color: var(--red-accent);
+    color: var(--white) !important;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: background-color 0.2s;
+}
+
+.donate-btn:hover {
+    background-color: var(--red-hover);
+    color: var(--white) !important;
+}
+
+/* === Main Content === */
+.main-content {
+    flex: 1;
+    padding: 2rem 3rem 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.main-content-inner {
+    width: 100%;
+    max-width: 720px;
+}
+
+.main-content.pledge-page {
+    padding-top: 0.5rem;
+}
+
+.main-content.bill-page h1 {
+    border-bottom-color: var(--red-accent);
+}
+
+/* === Typography === */
+h1, h2, h3, h4 {
+    color: var(--blue-primary);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 3px solid var(--blue-primary);
+}
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+
+p, li, label {
+    color: var(--gray-text);
+    font-weight: 500;
+}
+
+strong, b {
+    font-size: 1.1em;
+    font-weight: 700;
+}
+
+/* === Buttons === */
+.btn {
+    display: inline-block;
+    background-color: var(--blue-primary);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    background-color: var(--blue-hover);
+    color: var(--white);
+    box-shadow: 0 0 0 2px rgba(196, 30, 58, 0.2);
+}
+
+.btn-secondary {
+    background-color: var(--gray-light);
+    color: var(--blue-primary);
+    border: 2px solid var(--gray-border);
+}
+
+.btn-secondary:hover {
+    background-color: var(--gray-border);
+    border-color: var(--blue-primary);
+    color: var(--blue-hover);
+}
+
+/* === Forms === */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input[type="email"],
+textarea {
+    width: 100%;
+    max-width: 100%;
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--gray-border);
+    border-radius: 8px;
+    background-color: var(--white);
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--blue-primary);
+    box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.15);
+}
+
+/* === Article Boxes (Bill) === */
+.article-box {
+    background: var(--white);
+    border: 2px solid var(--gray-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 5px solid var(--blue-primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.article-box:hover {
+    border-left-color: var(--red-accent);
+    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.08);
+}
+
+.article-title {
+    color: var(--blue-primary);
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.article-desc {
+    color: var(--gray-text);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.note-text {
+    color: var(--gray-text);
+    background-color: var(--gray-light);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-style: italic;
+    border-radius: 8px;
+    margin-top: 0.75rem;
+}
+
+.bill-link {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--blue-primary);
+    color: var(--white) !important;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.bill-link:hover {
+    background-color: var(--red-accent);
+    color: var(--white) !important;
+}
+
+.donate-success-btn {
+    display: inline-block;
+    background-color: var(--blue-primary);
+    color: var(--white) !important;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.donate-success-btn:hover {
+    background-color: var(--red-accent);
+    color: var(--white) !important;
+}
+
+/* === Alerts === */
+.alert {
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.alert-error {
+    background-color: #FEE2E2;
+    color: #991B1B;
+    border-left: 4px solid #DC2626;
+}
+
+.alert-success {
+    background-color: #D1FAE5;
+    color: #065F46;
+    border-left: 4px solid #059669;
+}
+
+.alert-info {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+    border-left: 4px solid var(--blue-primary);
+}
+
+/* === Hero / Home === */
+.hero-subtitle {
+    color: var(--gray-text);
+    font-size: 1.1rem;
+    margin-top: -0.5rem;
+}
+
+.hero-subtitle .text-accent {
+    color: var(--blue-primary);
+    font-weight: 700;
+}
+
+.cta-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.cta-card {
+    padding: 1.5rem;
+    border: 2px solid var(--gray-border);
+    border-radius: 12px;
+    background: var(--white);
+}
+
+.cta-card h3 {
+    margin-top: 0;
+}
+
+/* === Pledge Steps === */
+.form-hint {
+    font-size: 0.875rem;
+    color: var(--gray-text);
+    margin: -0.5rem 0 1rem 0;
+}
+
+.pledge-form {
+    width: 100%;
+    max-width: 640px;
+    padding: 1.5rem 2rem;
+    border: 2px solid var(--gray-border);
+    border-left: 5px solid var(--blue-primary);
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Action buttons (Add Your Name / Read the Bill) */
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1rem 0 1.5rem 0;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    border: 2px solid var(--blue-primary);
+    background: var(--blue-primary);
+    color: var(--white);
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: var(--blue-hover);
+    border-color: var(--blue-hover);
+    color: var(--white);
+}
+
+.action-btn.outline {
+    background: var(--white);
+    color: var(--blue-primary);
+    border-color: var(--blue-primary);
+}
+
+.action-btn.outline:hover {
+    background: var(--gray-light);
+    border-color: var(--blue-hover);
+    color: var(--blue-hover);
+    box-shadow: 0 0 0 1px rgba(196, 30, 58, 0.2);
+}
+
+/* Address search dropdown */
+.address-search-wrap {
+    position: relative;
+}
+
+.address-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 2px;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--white);
+    border: 2px solid var(--gray-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.address-dropdown li {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: var(--gray-text);
+    font-size: 0.95rem;
+    border-bottom: 1px solid var(--gray-border);
+}
+
+.address-dropdown li:last-child {
+    border-bottom: none;
+}
+
+.address-dropdown li:hover {
+    background: var(--gray-light);
+    color: var(--blue-primary);
+}
+
+.step-nav {
+    margin-top: 1rem;
+}
+
+/* === Mobile === */
+@media (max-width: 768px) {
+    .app-bar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 44px;
+        padding: 0 1rem 0 0.8rem;
+        background: var(--blue-primary);
+        color: var(--white);
+        z-index: 1001;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .app-bar-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        background: transparent;
+        border: none;
+        color: var(--white);
+        font-size: 1.5rem;
+        cursor: pointer;
+        border-radius: 6px;
+    }
+
+    .app-bar-menu-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .app-bar-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+
+    .sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 999;
+    }
+
+    body.sidebar-open .sidebar-backdrop {
+        display: block;
+    }
+
+    .app-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        max-width: 85vw;
+        min-width: unset;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        overflow-y: auto;
+    }
+
+    body.sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+
+    .sidebar-logo {
+        max-width: 180px;
+    }
+
+    .main-content {
+        padding: 1rem 1.5rem 2rem;
+        padding-top: calc(44px + 1rem);
+        max-width: 100%;
+    }
+
+    .main-content.pledge-page {
+        padding-top: calc(33px + 0.25rem);
+    }
+
+    .main-content-inner {
+        max-width: 100%;
+    }
+
+    h1 { font-size: 2.25rem; }
+    h2 { font-size: 1.25rem; }
+
+    input[type="text"],
+    input[type="email"],
+    textarea {
+        max-width: 100%;
+    }
+}
+
+@media (min-width: 769px) {
+    .sidebar-backdrop {
+        display: none !important;
+    }
+}

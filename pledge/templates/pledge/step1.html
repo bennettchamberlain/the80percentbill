@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}The 80% Bill - Sign the Pledge{% endblock %}
+{% block main_content_class %}pledge-page{% endblock %}
+
+{% block content %}
+<h1>The 80% Bill</h1>
+<p class="hero-subtitle">20 bills that <span class="text-accent">80%+</span> of Americans support. Sign the pledge.</p>
+
+<div class="action-buttons">
+    <span class="action-btn">✍️ Add Your Name</span>
+    <a href="/bill/" class="action-btn outline">📖 Read the Bill</a>
+</div>
+
+<div class="alert alert-info">
+    <strong>Pledge:</strong> By completing this form, I state that I will not vote for anyone who does not actively support this bill.
+</div>
+
+<div class="pledge-form">
+    <h2>Step 1: Enter your District</h2>
+    <p><strong>Enter your address to look up this info:</strong></p>
+
+    <div class="address-search-wrap">
+        <div class="form-group">
+            <label for="address">Address</label>
+            <input type="text" id="address" placeholder="Type to search (addresses appear below as you type)"
+                   value="" autocomplete="off">
+        </div>
+        <ul class="address-dropdown" id="address-dropdown" aria-hidden="true"></ul>
+    </div>
+    <p class="form-hint">Select an address from the list to automatically fill your district and representative.</p>
+
+    {% if district_info %}
+    <div class="alert alert-success">✓ <strong>Filled in!</strong> Verify your district and representative below, then click <strong>Continue to Sign</strong>.</div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <hr>
+    <p><strong>Or enter manually:</strong></p>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="continue">
+        <div class="form-group">
+            <label for="district">District Code:</label>
+            <input type="text" id="district" name="district" placeholder="e.g. NY-14" value="{{ district_input }}">
+        </div>
+        <div class="form-group">
+            <label for="rep">Representative Name:</label>
+            <input type="text" id="rep" name="rep" placeholder="e.g. Alexandria Ocasio-Cortez" value="{{ rep_input }}">
+        </div>
+        <button type="submit" class="btn">Continue to Sign</button>
+    </form>
+</div>
+
+<script>
+(function() {
+    const addressInput = document.getElementById('address');
+    const dropdown = document.getElementById('address-dropdown');
+    const districtInput = document.getElementById('district');
+    const repInput = document.getElementById('rep');
+    const lookupUrl = '{% url "pledge:address_lookup" %}';
+
+    function hideDropdown() {
+        dropdown.innerHTML = '';
+        dropdown.setAttribute('aria-hidden', 'true');
+    }
+
+    function showDropdown(items) {
+        dropdown.innerHTML = '';
+        items.slice(0, 6).forEach(function(addr) {
+            const li = document.createElement('li');
+            li.textContent = addr;
+            li.tabIndex = 0;
+            li.addEventListener('click', function() {
+                addressInput.value = addr;
+                hideDropdown();
+                fetch(lookupUrl + '?address=' + encodeURIComponent(addr))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.district && data.rep) {
+                            districtInput.value = data.district;
+                            repInput.value = data.rep;
+                            var msg = document.getElementById('lookup-success-msg');
+                            if (!msg) {
+                                msg = document.createElement('div');
+                                msg.id = 'lookup-success-msg';
+                                msg.className = 'alert alert-success';
+                                msg.innerHTML = '✓ <strong>Filled in!</strong> Verify your district and representative below, then click <strong>Continue to Sign</strong>.';
+                                document.querySelector('.pledge-form').insertBefore(msg, document.querySelector('.pledge-form hr'));
+                            }
+                        }
+                    })
+                    .catch(function() {});
+            });
+            li.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { li.click(); }
+            });
+            dropdown.appendChild(li);
+        });
+        dropdown.setAttribute('aria-hidden', 'false');
+    }
+
+    let debounceTimer;
+    addressInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const q = addressInput.value.trim();
+        if (q.length < 3) {
+            hideDropdown();
+            return;
+        }
+        debounceTimer = setTimeout(function() {
+            fetch('{% url "pledge:address_suggestions" %}?q=' + encodeURIComponent(q))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var items = data.suggestions || [];
+                    if (items.length) {
+                        showDropdown(items);
+                    } else {
+                        hideDropdown();
+                    }
+                })
+                .catch(hideDropdown);
+        }, 400);
+    });
+
+    addressInput.addEventListener('blur', function() {
+        setTimeout(hideDropdown, 200);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!addressInput.contains(e.target) && !dropdown.contains(e.target)) {
+            hideDropdown();
+        }
+    });
+})();
+</script>
+{% endblock %}

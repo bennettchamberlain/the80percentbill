@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}The 80% Bill - Thank You{% endblock %}
+{% block main_content_class %}pledge-page{% endblock %}
+
+{% block content %}
+<h1>The 80% Bill</h1>
+<hr>
+<div class="pledge-form">
+    <div class="alert alert-success"><strong>Thank you!</strong> Your name has been added to the pledge.</div>
+    <p></p>
+    <a href="{{ donation_link }}" target="_blank" rel="noopener noreferrer" class="donate-success-btn">
+        ❤️ Donate $5 to help spread the word
+    </a>
+    <p></p>
+    <form method="post" style="margin-top: 1rem;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="another">
+        <button type="submit" class="btn">Sign Another Person</button>
+    </form>
+</div>
+{% endblock %}
