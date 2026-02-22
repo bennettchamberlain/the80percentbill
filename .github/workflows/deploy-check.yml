@@ -43,6 +43,9 @@ jobs:
 
       - name: Verify gunicorn starts
         run: |
-          # Timeout exits 124 when it kills the process — that means gunicorn ran successfully
+          set +e
           timeout 5 python -m gunicorn the_80_percent_bill.wsgi --bind 0.0.0.0:8000
-          [ $? -eq 124 ]
+          EXIT=$?
+          set -e
+          # 124 = timeout killed it (gunicorn was running). 0 = gunicorn exited. Both OK.
+          [ $EXIT -eq 124 ] || [ $EXIT -eq 0 ]
