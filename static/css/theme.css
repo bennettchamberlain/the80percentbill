@@ -325,7 +325,8 @@ textarea:focus {
 .hero-subtitle {
     color: var(--gray-text);
     font-size: 1.1rem;
-    margin-top: -0.5rem;
+    margin-top: -0.25rem;
+    padding-top: 0.25rem;
 }
 
 .hero-subtitle .text-accent {
