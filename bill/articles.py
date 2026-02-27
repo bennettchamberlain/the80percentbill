@@ -121,4 +121,18 @@ ARTICLES = [
         "https://www.congress.gov/bill/118th-congress/house-bill/2463",
         None,
     ),
+(
+        "XX. Congressional Term Limits",
+        "Establish term limits for members of Congress.",
+        "https://www.congress.gov/bill/118th-congress/house-joint-resolution/11",
+        None,
+    ),
+    (
+        "XXI. Comprehensive Data Privacy",
+        "Implement a comprehensive data privacy framework modeled directly after the GDPR to protect consumer data across the European Union.",
+        "https://www.congress.gov/bill/118th-congress/house-bill/8818",
+        None,
+    ),
 ]
+
+VETERANS_BILL_NOTE = "Note: Improving veterans' access to healthcare was removed from our platform because the bill we were supporting (H.R. 8371) has already been successfully passed and signed into law."
