@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
+from bill.articles import ARTICLES
 from core.geo import get_district, get_osm_addresses
 from core.sheets import is_duplicate, save_pledge
 
@@ -63,6 +64,9 @@ def _step1(request):
             request.session.pop("pledge_rep", None)
             return redirect("pledge:index")
 
+    # Count active bills (those that are numbered)
+    active_bill_count = sum(1 for article in ARTICLES if len(article) <= 4 or not article[4])
+    
     return render(
         request,
         "pledge/step1.html",
@@ -71,6 +75,7 @@ def _step1(request):
             "district_input": district_input or (district_info[0] if district_info else ""),
             "rep_input": rep_input or (district_info[1] if district_info else ""),
             "error": error,
+            "bill_count": active_bill_count,
         },
     )
 

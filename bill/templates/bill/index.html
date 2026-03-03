@@ -1,42 +1,21 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2113.65">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; color: #000000; -webkit-text-stroke: #000000}
-    p.p3 {margin: 0.0px 0.0px 12.0px 0.0px; font: 12.0px Times; color: #000000; -webkit-text-stroke: #000000}
-    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; color: #0000e9; -webkit-text-stroke: #0000e9}
-    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; color: #000000; -webkit-text-stroke: #000000; min-height: 14.0px}
-    p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; -webkit-text-stroke: #000000}
-    span.s1 {font-kerning: none}
-    span.s2 {font-kerning: none; color: #000000; -webkit-text-stroke: 0px #000000}
-    span.s3 {text-decoration: underline ; font-kerning: none; color: #0000e9; -webkit-text-stroke: 0px #0000e9}
-    span.Apple-tab-span {white-space:pre}
-  </style>
-</head>
-<body>
-<p class="p1"><span class="s1">{% extends "base.html" %} {% block title %}The 80% Bill - Read the Bill{% endblock %} {% block main_content_class %}bill-page{% endblock %} {% block content %}</span></p>
-<h1 style="margin: 0.0px 0.0px 16.1px 0.0px; font: 24.0px Times; color: #000000; -webkit-text-stroke: #000000"><span class="s1"><b>The 80% Bill</b></span></h1>
-<p class="p3"><span class="s1"><b>Every article below is supported by at least 80% of American voters.</b></span></p>
-<p class="p3"><span class="s1">Browse the bills, read the details, and click through to Congress.gov for the full legislation.</span></p>
-<p class="p1"><span class="s1">{% for title, desc, link, note in articles %}</span></p>
-<p class="p1"><span class="s1">{{ title }}</span></p>
-<p class="p1"><span class="s1">{{ desc|linebreaksbr }}</span></p>
-<p class="p1"><span class="s1">{% if note %}</span></p>
-<p class="p1"><span class="s1">{{ note }}</span></p>
-<p class="p4"><span class="s2">{% endif %} <a href="file:///Volumes/THE%20SHIP%20RETURNS/the80percentbill/bill/templates/bill/%7B%7B%20link%20%7D%7D"><span class="s3">ðŸ›ï¸ Read the Bill</span></a><span class="Apple-converted-space"> </span></span></p>
-<p class="p1"><span class="s1">{% endfor %}<span class="Apple-converted-space"> </span></span></p>
-<p class="p5"><span class="s1"></span><br></p>
-<p class="p6"><span class="s1">&lt;div style="margin-top: 40px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #6c757d;"&gt;<span class="Apple-converted-space"> </span></span></p>
-<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span>&lt;p style="margin: 0; font-size: 0.9em; color: #495057;"&gt;<span class="Apple-converted-space"> </span></span></p>
-<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>&lt;i&gt;{{ veterans_note }}&lt;/i&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-tab-span">	</span>&lt;/p&gt;</span></p>
-<p class="p6"><span class="s1">&lt;/div&gt;</span></p>
-<p class="p5"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">{% endblock %}<span class="Apple-converted-space"> </span></span></p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}The 80% Bill - Read the Bill{% endblock %}
+{% block main_content_class %}bill-page{% endblock %}
+
+{% block content %}
+<h1><b>The 80% Bill</b></h1>
+<p><b>Every article below is supported by at least 80% of American voters.</b></p>
+<p>Browse the bills, read the details, and click through to Congress.gov for the full legislation.</p>
+
+{% for title, desc, link, note in articles %}
+<div class="article-box">
+    <div class="article-title">{{ title }}</div>
+    <div class="article-desc">{{ desc|linebreaksbr }}</div>
+    {% if note %}
+    <div class="note-text">{{ note }}</div>
+    {% endif %}
+    <a href="{{ link }}" target="_blank" rel="noopener noreferrer" class="bill-link">🏛️ Read the Bill</a>
+</div>
+{% endfor %}
+{% endblock %}

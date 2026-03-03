@@ -60,6 +60,7 @@ python/the_80_percent_bill/        # Project root (run manage.py from here)
 ```bash
 # 1. Create and activate virtual environment
 python -m venv venv
+# python3.12 -m venv venv        # WSL (Since default is 3.10)
 source venv/bin/activate          # macOS/Linux
 # venv\Scripts\activate          # Windows
 
