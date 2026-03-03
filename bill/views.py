@@ -1,7 +1,6 @@
 from django.shortcuts import render
 
-from .articles import ARTICLES
-
+from .articles import ARTICLES, VETERANS_BILL_NOTE
 
 def int_to_roman(num):
     """Convert an integer to a Roman numeral (1-30)."""
@@ -33,3 +32,4 @@ def index(request):
             counter += 1
     
     return render(request, "bill/index.html", {"articles": numbered_articles})
+

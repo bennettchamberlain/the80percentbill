@@ -116,8 +116,10 @@ ARTICLES = [
         "https://www.congress.gov/bill/118th-congress/house-bill/2463",
         None,
     ),
+
     (
         "Congressional Term Limits",
+
         "Establish term limits for members of Congress.",
         "https://www.congress.gov/bill/118th-congress/house-joint-resolution/11",
         None,
