@@ -24,8 +24,6 @@ load_dotenv(BASE_DIR / ".env")
 # Environment / secrets (loaded from .env or environment)
 GEOCODIO_API_KEY = os.environ.get("GEOCODIO_API_KEY", "")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
-DONATION_LINK = "https://www.buymeacoffee.com/80percentbill"
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
