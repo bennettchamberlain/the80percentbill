@@ -390,3 +390,35 @@ class EmailLog(models.Model):
     
     def __str__(self):
         return f"{self.recipient_email} - {self.get_status_display()}"
+
+
+class SenderEmail(models.Model):
+    """
+    Approved sender email addresses for campaigns.
+    """
+    email = models.EmailField(unique=True, verbose_name='Sender Email')
+    display_name = models.CharField(max_length=100, default='The 80% Bill', verbose_name='Display Name')
+    is_verified = models.BooleanField(
+        default=False,
+        verbose_name='Verified',
+        help_text="Verified in email provider (Brevo, etc.)"
+    )
+    is_active = models.BooleanField(default=True, verbose_name='Active')
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Description',
+        help_text="e.g., 'General inquiries', 'Newsletter', 'Support'"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Sender Email'
+        verbose_name_plural = 'Sender Emails'
+        ordering = ['-is_verified', 'email']
+    
+    def __str__(self):
+        status = "✓" if self.is_verified else "⚠"
+        return f"{status} {self.email} ({self.display_name})"
+

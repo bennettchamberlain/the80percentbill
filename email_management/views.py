@@ -234,6 +234,7 @@ def test_email(request):
         recipient_email = request.POST.get('recipient_email', '').strip()
         pledge_id = request.POST.get('pledge_id')
         subject = request.POST.get('subject', 'Test Email from The 80% Bill')
+        from_email = request.POST.get('from_email', '')  # New: sender selection
         
         # Get template variables
         template_vars = {}
@@ -268,7 +269,7 @@ def test_email(request):
             elif recipient_email:
                 # Manual email
                 contact, created = Contact.objects.get_or_create(
-                    email=recipient_email,
+                    recipient_email,
                     defaults={
                         'source': 'test_email',
                     }
@@ -281,18 +282,20 @@ def test_email(request):
             smtp_config = SMTPConfiguration.objects.get(is_default=True)
             service = EmailSendingService(smtp_config)
             
+            # Use selected from_email or default
             log = service.send_email(
                 to_email=recipient_email,
                 subject=subject,
                 html_body=rendered_html,
                 user=user,
-                contact=contact
+                contact=contact,
+                from_email=from_email if from_email else None
             )
             
             if log.status == 'sent':
                 messages.success(
                     request,
-                    f'✅ Test email sent successfully to {recipient_email}! '
+                    f'✅ Test email sent successfully to {recipient_email} from {from_email or smtp_config.from_email}! '
                     f'This contact has now been emailed {contact.emails_sent} time(s).'
                 )
             else:
@@ -308,12 +311,16 @@ def test_email(request):
             return redirect('email_test')
     
     # GET request - show form
+    from .models import SenderEmail
+    
     templates = EmailTemplateLoader.get_available_templates()
     pledges = Pledge.objects.all().order_by('-created_at')[:50]  # Recent 50 pledges
+    sender_emails = SenderEmail.objects.filter(is_active=True).order_by('-is_verified', 'email')
     
     context = {
         'templates': templates,
         'pledges': pledges,
+        'sender_emails': sender_emails,
     }
     
     return render(request, 'email_management/test_email.html', context)

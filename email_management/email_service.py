@@ -25,7 +25,7 @@ class EmailSendingService:
         self.config = smtp_config
     
     def send_email(self, to_email, subject, html_body=None, text_body=None, 
-                   campaign=None, user=None, contact=None):
+                   campaign=None, user=None, contact=None, from_email=None):
         """
         Send a single email.
         
@@ -37,10 +37,14 @@ class EmailSendingService:
             campaign: EmailCampaign instance (optional)
             user: EmailUser who is sending (optional)
             contact: Contact instance (optional)
+            from_email: Override sender email (optional, defaults to SMTP config)
         
         Returns:
             EmailLog instance
         """
+        # Use provided from_email or default to SMTP config
+        sender_email = from_email or self.config.from_email
+        
         # Create log entry
         log = EmailLog.objects.create(
             campaign=campaign,
@@ -55,7 +59,7 @@ class EmailSendingService:
             # Create message
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
-            msg['From'] = formataddr((self.config.from_name, self.config.from_email))
+            msg['From'] = formataddr((self.config.from_name, sender_email))
             msg['To'] = to_email
             
             # Add bodies

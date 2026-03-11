@@ -218,6 +218,21 @@
         <h2>3. Customize Email</h2>
         
         <div class="form-group">
+            <label for="from_email">From (Sender Email)</label>
+            <select id="from_email" name="from_email" required>
+                {% for sender in sender_emails %}
+                <option value="{{ sender.email }}" {% if sender.is_verified %}selected{% endif %}>
+                    {% if sender.is_verified %}✓{% else %}⚠{% endif %} 
+                    {{ sender.email }} ({{ sender.display_name }})
+                    {% if sender.description %} - {{ sender.description }}{% endif %}
+                </option>
+                {% empty %}
+                <option value="">No sender emails configured</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
             <label for="subject">Subject Line</label>
             <input type="text" 
                    id="subject" 

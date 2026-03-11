@@ -9,6 +9,7 @@ from .models import (
     EmailTemplate,
     EmailCampaign,
     EmailLog,
+    SenderEmail,
 )
 
 
@@ -473,3 +474,39 @@ class EmailLogAdmin(admin.ModelAdmin):
             obj.get_status_display()
         )
     status_badge.short_description = 'Status'
+
+
+@admin.register(SenderEmail)
+class SenderEmailAdmin(admin.ModelAdmin):
+    """
+    Admin interface for sender emails.
+    """
+    list_display = ['email', 'display_name', 'verified_badge', 'active_badge', 'description', 'created_at']
+    list_filter = ['is_verified', 'is_active']
+    search_fields = ['email', 'display_name', 'description']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Email Information', {
+            'fields': ('email', 'display_name', 'description')
+        }),
+        ('Status', {
+            'fields': ('is_verified', 'is_active')
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def verified_badge(self, obj):
+        if obj.is_verified:
+            return format_html('<span style="color: green; font-weight: bold;">✓ Verified</span>')
+        return format_html('<span style="color: orange;">⚠ Not Verified</span>')
+    verified_badge.short_description = 'Verified'
+    
+    def active_badge(self, obj):
+        if obj.is_active:
+            return format_html('<span style="color: green;">● Active</span>')
+        return format_html('<span style="color: #ccc;">○ Inactive</span>')
+    active_badge.short_description = 'Status'
