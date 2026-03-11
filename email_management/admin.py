@@ -3,11 +3,124 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 from .models import (
     EmailUser,
+    Contact,
+    ContactList,
     SMTPConfiguration,
     EmailTemplate,
     EmailCampaign,
     EmailLog,
 )
+
+
+@admin.register(Contact)
+class ContactAdmin(admin.ModelAdmin):
+    """
+    Admin interface for contacts/subscribers.
+    """
+    list_display = [
+        'email',
+        'first_name',
+        'last_name',
+        'district',
+        'state',
+        'is_subscribed_badge',
+        'emails_sent',
+        'source',
+        'created_at',
+    ]
+    list_filter = ['is_subscribed', 'state', 'source', 'created_at']
+    search_fields = ['email', 'first_name', 'last_name', 'district', 'phone']
+    ordering = ['-created_at']
+    
+    fieldsets = (
+        ('Contact Information', {
+            'fields': ('email', 'first_name', 'last_name', 'phone')
+        }),
+        ('Location', {
+            'fields': ('district', 'state')
+        }),
+        ('Subscription', {
+            'fields': ('is_subscribed', 'unsubscribed_at')
+        }),
+        ('Engagement Stats', {
+            'fields': ('emails_sent', 'emails_opened', 'last_email_sent'),
+            'classes': ('collapse',),
+        }),
+        ('Metadata', {
+            'fields': ('source', 'notes', 'custom_data', 'created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    readonly_fields = ['emails_sent', 'emails_opened', 'last_email_sent', 'created_at', 'updated_at', 'unsubscribed_at']
+    
+    actions = ['unsubscribe_contacts', 'resubscribe_contacts']
+    
+    def is_subscribed_badge(self, obj):
+        if obj.is_subscribed:
+            return format_html(
+                '<span style="color: green; font-weight: bold;">✓ Subscribed</span>'
+            )
+        return format_html(
+            '<span style="color: #999;">✗ Unsubscribed</span>'
+        )
+    is_subscribed_badge.short_description = 'Status'
+    
+    def unsubscribe_contacts(self, request, queryset):
+        """Bulk unsubscribe action."""
+        count = 0
+        for contact in queryset:
+            if contact.is_subscribed:
+                contact.unsubscribe()
+                count += 1
+        self.message_user(request, f'Unsubscribed {count} contacts.')
+    unsubscribe_contacts.short_description = 'Unsubscribe selected contacts'
+    
+    def resubscribe_contacts(self, request, queryset):
+        """Bulk resubscribe action."""
+        count = queryset.update(is_subscribed=True, unsubscribed_at=None)
+        self.message_user(request, f'Resubscribed {count} contacts.')
+    resubscribe_contacts.short_description = 'Resubscribe selected contacts'
+
+
+@admin.register(ContactList)
+class ContactListAdmin(admin.ModelAdmin):
+    """
+    Admin interface for contact lists/segments.
+    """
+    list_display = [
+        'name',
+        'contact_count',
+        'created_by',
+        'created_at',
+    ]
+    list_filter = ['created_at', 'created_by']
+    search_fields = ['name', 'description']
+    ordering = ['-created_at']
+    filter_horizontal = ['contacts']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'description', 'created_by')
+        }),
+        ('Contacts', {
+            'fields': ('contacts',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def contact_count(self, obj):
+        count = obj.contacts.count()
+        return format_html(
+            '<span style="color: #666;">{} contacts</span>',
+            count
+        )
+    contact_count.short_description = 'Contacts'
 
 
 @admin.register(EmailUser)

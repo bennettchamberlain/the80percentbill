@@ -1,5 +1,6 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
 class EmailUser(AbstractUser):
@@ -50,6 +51,90 @@ class EmailUser(AbstractUser):
                 self.username = f"{base_username}{counter}"
                 counter += 1
         super().save(*args, **kwargs)
+
+
+class Contact(models.Model):
+    """
+    Contacts/subscribers for email campaigns.
+    This is where we manage our own contact list.
+    """
+    email = models.EmailField(unique=True, verbose_name='Email Address', db_index=True)
+    first_name = models.CharField(max_length=255, blank=True, verbose_name='First Name')
+    last_name = models.CharField(max_length=255, blank=True, verbose_name='Last Name')
+    
+    # Custom fields
+    phone = models.CharField(max_length=50, blank=True, verbose_name='Phone')
+    district = models.CharField(max_length=10, blank=True, verbose_name='District Code')
+    state = models.CharField(max_length=50, blank=True, verbose_name='State')
+    
+    # Subscription status
+    is_subscribed = models.BooleanField(default=True, verbose_name='Subscribed')
+    unsubscribed_at = models.DateTimeField(null=True, blank=True, verbose_name='Unsubscribed At')
+    
+    # Engagement tracking
+    emails_sent = models.IntegerField(default=0, verbose_name='Emails Sent')
+    emails_opened = models.IntegerField(default=0, verbose_name='Emails Opened')
+    last_email_sent = models.DateTimeField(null=True, blank=True, verbose_name='Last Email Sent')
+    
+    # Metadata
+    source = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Source',
+        help_text='How this contact was added (e.g., pledge form, import, manual)'
+    )
+    notes = models.TextField(blank=True, verbose_name='Notes')
+    custom_data = models.JSONField(default=dict, blank=True, verbose_name='Custom Data')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Contact'
+        verbose_name_plural = 'Contacts'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['is_subscribed']),
+            models.Index(fields=['-created_at']),
+        ]
+    
+    def __str__(self):
+        if self.first_name or self.last_name:
+            return f"{self.first_name} {self.last_name} <{self.email}>".strip()
+        return self.email
+    
+    def unsubscribe(self):
+        """Unsubscribe this contact."""
+        self.is_subscribed = False
+        self.unsubscribed_at = timezone.now()
+        self.save()
+
+
+class ContactList(models.Model):
+    """
+    Lists/segments for organizing contacts.
+    """
+    name = models.CharField(max_length=255, verbose_name='List Name')
+    description = models.TextField(blank=True, verbose_name='Description')
+    contacts = models.ManyToManyField(Contact, related_name='lists', verbose_name='Contacts')
+    
+    created_by = models.ForeignKey(
+        EmailUser,
+        on_delete=models.CASCADE,
+        related_name='contact_lists',
+        verbose_name='Created By'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Contact List'
+        verbose_name_plural = 'Contact Lists'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} ({self.contacts.count()} contacts)"
 
 
 class SMTPConfiguration(models.Model):
@@ -137,7 +222,7 @@ class EmailTemplate(models.Model):
         default=dict,
         blank=True,
         verbose_name='Available Variables',
-        help_text='Variables that can be used in this template (e.g., {{name}}, {{link}})'
+        help_text='Variables that can be used in this template (e.g., {"first_name": "Recipient first name"})'
     )
     
     is_active = models.BooleanField(default=True, verbose_name='Active')
@@ -163,6 +248,7 @@ class EmailCampaign(models.Model):
         ('scheduled', 'Scheduled'),
         ('sending', 'Sending'),
         ('sent', 'Sent'),
+        ('paused', 'Paused'),
         ('failed', 'Failed'),
     ]
     
@@ -188,6 +274,14 @@ class EmailCampaign(models.Model):
         verbose_name='Email Template'
     )
     
+    # Recipient selection
+    contact_lists = models.ManyToManyField(
+        ContactList,
+        blank=True,
+        related_name='campaigns',
+        verbose_name='Contact Lists'
+    )
+    
     subject = models.CharField(max_length=255, verbose_name='Email Subject')
     body_html = models.TextField(verbose_name='HTML Body', blank=True)
     body_text = models.TextField(verbose_name='Plain Text Body', blank=True)
@@ -197,13 +291,6 @@ class EmailCampaign(models.Model):
         choices=STATUS_CHOICES,
         default='draft',
         verbose_name='Status'
-    )
-    
-    # Recipients (stored as JSON array of email addresses)
-    recipients = models.JSONField(
-        default=list,
-        verbose_name='Recipients',
-        help_text='List of recipient email addresses'
     )
     
     # Statistics
@@ -217,10 +304,15 @@ class EmailCampaign(models.Model):
         blank=True,
         verbose_name='Scheduled Send Time'
     )
-    sent_at = models.DateTimeField(
+    started_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Actually Sent At'
+        verbose_name='Started Sending At'
+    )
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Completed At'
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -232,7 +324,7 @@ class EmailCampaign(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.name} - {self.status}"
+        return f"{self.name} - {self.get_status_display()}"
 
 
 class EmailLog(models.Model):
@@ -241,6 +333,7 @@ class EmailLog(models.Model):
     """
     STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('sending', 'Sending'),
         ('sent', 'Sent'),
         ('failed', 'Failed'),
         ('bounced', 'Bounced'),
@@ -253,6 +346,12 @@ class EmailLog(models.Model):
         null=True,
         blank=True,
         verbose_name='Campaign'
+    )
+    contact = models.ForeignKey(
+        Contact,
+        on_delete=models.CASCADE,
+        related_name='email_logs',
+        verbose_name='Contact'
     )
     user = models.ForeignKey(
         EmailUser,
@@ -290,4 +389,4 @@ class EmailLog(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.recipient_email} - {self.status}"
+        return f"{self.recipient_email} - {self.get_status_display()}"
