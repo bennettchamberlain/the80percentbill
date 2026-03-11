@@ -217,5 +217,110 @@ def logs(request):
     return render(request, 'email_management/logs.html', context)
 
 
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def test_email(request):
+    """
+    Test email sending interface.
+    Select template, recipient, and send test email.
+    """
+    user = request.user
+    
+    if request.method == 'POST':
+        # Get form data
+        template_category = request.POST.get('template_category')
+        template_filename = request.POST.get('template_filename')
+        recipient_source = request.POST.get('recipient_source')  # 'pledge' or 'manual'
+        recipient_email = request.POST.get('recipient_email', '').strip()
+        pledge_id = request.POST.get('pledge_id')
+        subject = request.POST.get('subject', 'Test Email from The 80% Bill')
+        
+        # Get template variables
+        template_vars = {}
+        for key in request.POST:
+            if key.startswith('var_'):
+                var_name = key.replace('var_', '')
+                template_vars[var_name] = request.POST.get(key)
+        
+        try:
+            # Load template
+            html_content = EmailTemplateLoader.load_template(template_category, template_filename)
+            
+            # Render with variables
+            rendered_html = EmailTemplateLoader.render_template(html_content, template_vars)
+            
+            # Get or create contact
+            from .models import Contact
+            
+            if recipient_source == 'pledge' and pledge_id:
+                # Get from pledge
+                pledge = Pledge.objects.get(id=pledge_id)
+                recipient_email = pledge.email
+                contact, created = Contact.objects.get_or_create(
+                    email=recipient_email,
+                    defaults={
+                        'first_name': pledge.name.split()[0] if pledge.name else '',
+                        'district': pledge.district,
+                        'state': pledge.state,
+                        'source': 'pledge_form',
+                    }
+                )
+            elif recipient_email:
+                # Manual email
+                contact, created = Contact.objects.get_or_create(
+                    email=recipient_email,
+                    defaults={
+                        'source': 'test_email',
+                    }
+                )
+            else:
+                messages.error(request, 'Please provide a recipient email.')
+                return redirect('email_test')
+            
+            # Send email
+            smtp_config = SMTPConfiguration.objects.get(is_default=True)
+            service = EmailSendingService(smtp_config)
+            
+            log = service.send_email(
+                to_email=recipient_email,
+                subject=subject,
+                html_body=rendered_html,
+                user=user,
+                contact=contact
+            )
+            
+            if log.status == 'sent':
+                messages.success(
+                    request,
+                    f'✅ Test email sent successfully to {recipient_email}! '
+                    f'This contact has now been emailed {contact.emails_sent} time(s).'
+                )
+            else:
+                messages.error(
+                    request,
+                    f'❌ Failed to send email: {log.error_message}'
+                )
+            
+            return redirect('email_test')
+            
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+            return redirect('email_test')
+    
+    # GET request - show form
+    templates = EmailTemplateLoader.get_available_templates()
+    pledges = Pledge.objects.all().order_by('-created_at')[:50]  # Recent 50 pledges
+    
+    context = {
+        'templates': templates,
+        'pledges': pledges,
+    }
+    
+    return render(request, 'email_management/test_email.html', context)
+
+
 # Import models at the top
 from django.db import models
+from .template_loader import EmailTemplateLoader
+from .email_service import EmailSendingService
+from pledge.models import Pledge

@@ -10,6 +10,9 @@ urlpatterns = [
     # Dashboard
     path('dashboard/', views.email_dashboard, name='email_dashboard'),
     
+    # Test Email
+    path('test/', views.test_email, name='email_test'),
+    
     # Management pages
     path('smtp/', views.smtp_configs, name='email_smtp_configs'),
     path('templates/', views.templates, name='email_templates'),

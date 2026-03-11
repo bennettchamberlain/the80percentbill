@@ -1,0 +1,338 @@
+{% extends 'email_management/base.html' %}
+
+{% block title %}Send Test Email - Email Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .form-section h2 {
+        font-size: 18px;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-group textarea {
+        min-height: 100px;
+        font-family: monospace;
+    }
+    
+    .template-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .template-card {
+        border: 2px solid #ddd;
+        padding: 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .template-card:hover {
+        border-color: #3498db;
+        background: #ecf0f1;
+    }
+    
+    .template-card.selected {
+        border-color: #3498db;
+        background: #d5e8f7;
+    }
+    
+    .template-card h3 {
+        margin: 0 0 5px 0;
+        font-size: 14px;
+        color: #2c3e50;
+    }
+    
+    .template-card p {
+        margin: 0;
+        font-size: 12px;
+        color: #7f8c8d;
+    }
+    
+    .btn {
+        padding: 12px 30px;
+        border-radius: 4px;
+        border: none;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #2980b9;
+    }
+    
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+        margin-left: 10px;
+    }
+    
+    .btn-secondary:hover {
+        background: #7f8c8d;
+    }
+    
+    #variable-inputs {
+        margin-top: 20px;
+    }
+    
+    .pill {
+        display: inline-block;
+        padding: 4px 10px;
+        background: #e8f5e9;
+        color: #27ae60;
+        border-radius: 12px;
+        font-size: 12px;
+        margin: 2px;
+    }
+    
+    .recipient-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 30px;">📧 Send Test Email</h1>
+
+<form method="post" id="test-email-form">
+    {% csrf_token %}
+    
+    <!-- Step 1: Select Template -->
+    <div class="form-section">
+        <h2>1. Select Email Template</h2>
+        
+        <h3 style="font-size: 14px; color: #7f8c8d; margin: 0 0 10px 0;">Common Templates</h3>
+        <div class="template-grid">
+            {% for template in templates.common %}
+            <div class="template-card" 
+                 data-category="common" 
+                 data-filename="{{ template.filename }}"
+                 onclick="selectTemplate(this)">
+                <h3>{{ template.name }}</h3>
+                <p>{{ template.category }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <h3 style="font-size: 14px; color: #7f8c8d; margin: 20px 0 10px 0;">District-Specific Templates</h3>
+        <div class="template-grid">
+            {% for template in templates.district-emails %}
+            <div class="template-card" 
+                 data-category="district-emails" 
+                 data-filename="{{ template.filename }}"
+                 onclick="selectTemplate(this)">
+                <h3>{{ template.name }}</h3>
+                <p>{{ template.category }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <input type="hidden" name="template_category" id="template_category">
+        <input type="hidden" name="template_filename" id="template_filename">
+    </div>
+    
+    <!-- Step 2: Select Recipient -->
+    <div class="form-section">
+        <h2>2. Select Recipient</h2>
+        
+        <div class="recipient-options">
+            <div>
+                <label>
+                    <input type="radio" name="recipient_source" value="pledge" checked>
+                    Select from Pledge Signers
+                </label>
+                <select name="pledge_id" id="pledge-select" class="form-group" style="margin-top: 10px;">
+                    <option value="">-- Select a pledge signer --</option>
+                    {% for pledge in pledges %}
+                    <option value="{{ pledge.id }}" 
+                            data-email="{{ pledge.email }}"
+                            data-name="{{ pledge.name }}"
+                            data-district="{{ pledge.district }}"
+                            data-state="{{ pledge.state }}">
+                        {{ pledge.name }} ({{ pledge.email }}) - {{ pledge.district }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label>
+                    <input type="radio" name="recipient_source" value="manual">
+                    Or Enter Email Manually
+                </label>
+                <input type="email" 
+                       name="recipient_email" 
+                       id="manual-email"
+                       placeholder="recipient@example.com"
+                       class="form-group"
+                       style="margin-top: 10px;">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 3: Customize Email -->
+    <div class="form-section">
+        <h2>3. Customize Email</h2>
+        
+        <div class="form-group">
+            <label for="subject">Subject Line</label>
+            <input type="text" 
+                   id="subject" 
+                   name="subject" 
+                   value="Test Email from The 80% Bill"
+                   required>
+        </div>
+        
+        <div id="variable-inputs">
+            <p style="color: #7f8c8d; font-size: 14px;">
+                Variables will appear here based on selected template.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Submit -->
+    <div class="form-section">
+        <button type="submit" class="btn btn-primary">📤 Send Test Email</button>
+        <button type="button" class="btn btn-secondary" onclick="previewEmail()">👁️ Preview</button>
+    </div>
+</form>
+
+<script>
+let selectedTemplate = null;
+
+function selectTemplate(element) {
+    // Remove previous selection
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Mark as selected
+    element.classList.add('selected');
+    
+    // Store selection
+    const category = element.dataset.category;
+    const filename = element.dataset.filename;
+    
+    document.getElementById('template_category').value = category;
+    document.getElementById('template_filename').value = filename;
+    
+    // Load template variables (you would fetch this via AJAX in production)
+    loadTemplateVariables(category, filename);
+}
+
+function loadTemplateVariables(category, filename) {
+    // Common variables based on template type
+    const commonVars = ['first_name', 'email', 'unsubscribe_link'];
+    const districtVars = ['district', 'state', 'representative_name', 'representative_phone', 'representative_email'];
+    
+    let variables = [...commonVars];
+    
+    if (category === 'district-emails') {
+        variables = [...variables, ...districtVars];
+    }
+    
+    // Add template-specific variables
+    if (filename === 'welcome.html') {
+        variables.push('action_link');
+    } else if (filename === 'newsletter.html') {
+        variables.push('subject', 'message_body', 'urgent_message', 'action_link');
+    } else if (filename === 'contact-representative.html') {
+        variables.push('bill_link');
+    } else if (filename === 'town-hall.html') {
+        variables.push('event_date', 'event_time', 'event_location', 'rsvp_link');
+    }
+    
+    // Create input fields
+    const container = document.getElementById('variable-inputs');
+    container.innerHTML = '<h3 style="font-size: 16px; margin: 0 0 15px 0;">Template Variables:</h3>';
+    
+    variables.forEach(varName => {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = `
+            <label for="var_${varName}">
+                ${varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                <span class="pill">{{${varName}}}</span>
+            </label>
+            <input type="text" 
+                   id="var_${varName}" 
+                   name="var_${varName}" 
+                   placeholder="Value for {{${varName}}}">
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Auto-fill variables from selected pledge
+document.getElementById('pledge-select').addEventListener('change', function(e) {
+    if (!e.target.value) return;
+    
+    const option = e.target.options[e.target.selectedIndex];
+    const name = option.dataset.name || '';
+    const email = option.dataset.email || '';
+    const district = option.dataset.district || '';
+    const state = option.dataset.state || '';
+    
+    // Fill in variables
+    if (document.getElementById('var_first_name')) {
+        document.getElementById('var_first_name').value = name.split(' ')[0] || '';
+    }
+    if (document.getElementById('var_email')) {
+        document.getElementById('var_email').value = email;
+    }
+    if (document.getElementById('var_district')) {
+        document.getElementById('var_district').value = district;
+    }
+    if (document.getElementById('var_state')) {
+        document.getElementById('var_state').value = state;
+    }
+});
+
+function previewEmail() {
+    alert('Preview feature coming soon! For now, send a test email to yourself.');
+}
+</script>
+{% endblock %}
