@@ -24,4 +24,5 @@ urlpatterns = [
     path("pledge/", RedirectView.as_view(url="/", permanent=False)),
     path("bill/", include("bill.urls")),
     path("data/", include("data.urls")),
+    path("reps/", include("reps.urls")),
 ]

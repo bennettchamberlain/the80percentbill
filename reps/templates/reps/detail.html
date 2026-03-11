@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}{{ rep.title }} {{ rep.full_name }} — The 80% Bill{% endblock %}
+
+{% block main_content_class %}reps-page{% endblock %}
+
+{% block content %}
+<a href="{% url 'reps:directory' %}" class="rep-back-link">&larr; Back to directory</a>
+
+<!-- Header card -->
+<div class="rep-header-card">
+    <img src="{{ rep.photo_url }}" alt="Photo of {{ rep.full_name }}" class="rep-header-photo">
+    <div class="rep-header-info">
+        <h1 class="rep-header-name">{{ rep.title }} {{ rep.full_name }}</h1>
+        <span class="party-badge party-{{ rep.party }}">{{ rep.get_party_display }}</span>
+        <p class="rep-header-district">{{ rep.district_display }}</p>
+        {% if rep.term_start %}
+        <p class="rep-header-term">Term: {{ rep.term_start }} — {{ rep.term_end }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Alignment score -->
+<div class="rep-section">
+    <h2>80% Bill Alignment</h2>
+    {% if rep.alignment_score is not None %}
+    <div class="alignment-ring" data-score="{{ rep.alignment_score }}">
+        <svg viewBox="0 0 100 100" class="alignment-svg">
+            <circle cx="50" cy="50" r="45" class="alignment-bg"></circle>
+            <circle cx="50" cy="50" r="45" class="alignment-fill"
+                stroke-dasharray="{% widthratio rep.alignment_score 20 283 %} 283"
+            ></circle>
+        </svg>
+        <span class="alignment-text">{{ rep.alignment_score }}/20</span>
+    </div>
+    {% else %}
+    <div class="note-text">Alignment score not yet computed. This will be calculated from cosponsorship and voting data.</div>
+    {% endif %}
+</div>
+
+<!-- Bill positions -->
+<div class="rep-section">
+    <h2>Bill Positions</h2>
+    {% if positions %}
+    <div class="position-grid">
+        {% for pos in positions %}
+        <div class="position-card position-{{ pos.position }}">
+            <span class="position-article">Art. {{ pos.bill_article }}</span>
+            <span class="position-title">{{ pos.bill_title }}</span>
+            <span class="position-stance">{{ pos.get_position_display }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="note-text">Bill position data not yet populated. Coming soon.</div>
+    {% endif %}
+</div>
+
+<!-- Follow the Money -->
+<div class="rep-section">
+    <h2>Follow the Money</h2>
+    {% if rep.opensecrets_url %}
+    <a href="{{ rep.opensecrets_url }}" target="_blank" rel="noopener" class="btn">
+        View on OpenSecrets &rarr;
+    </a>
+    {% else %}
+    <div class="note-text">OpenSecrets data not linked for this representative.</div>
+    {% endif %}
+    <p class="rep-meta">Campaign finance visualizations coming soon.</p>
+</div>
+
+<!-- Contact -->
+<div class="rep-section">
+    <h2>Contact</h2>
+    <div class="rep-contact-grid">
+        {% if rep.phone %}
+        <a href="tel:{{ rep.phone }}" class="rep-contact-item">
+            <span class="rep-contact-icon">&#9742;</span>
+            <span>{{ rep.phone }}</span>
+        </a>
+        {% endif %}
+        {% if rep.official_website %}
+        <a href="{{ rep.official_website }}" target="_blank" rel="noopener" class="rep-contact-item">
+            <span class="rep-contact-icon">&#127760;</span>
+            <span>Official Website</span>
+        </a>
+        {% endif %}
+        {% if rep.contact_form_url %}
+        <a href="{{ rep.contact_form_url }}" target="_blank" rel="noopener" class="rep-contact-item">
+            <span class="rep-contact-icon">&#9993;</span>
+            <span>Contact Form</span>
+        </a>
+        {% endif %}
+        {% if rep.office_address %}
+        <div class="rep-contact-item">
+            <span class="rep-contact-icon">&#127970;</span>
+            <span>{{ rep.office_address }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Social media -->
+{% if rep.twitter or rep.facebook or rep.youtube or rep.instagram %}
+<div class="rep-section">
+    <h2>Social Media</h2>
+    <div class="rep-social-links">
+        {% if rep.twitter %}
+        <a href="https://twitter.com/{{ rep.twitter }}" target="_blank" rel="noopener" class="rep-social-btn">X / Twitter</a>
+        {% endif %}
+        {% if rep.facebook %}
+        <a href="https://facebook.com/{{ rep.facebook }}" target="_blank" rel="noopener" class="rep-social-btn">Facebook</a>
+        {% endif %}
+        {% if rep.youtube %}
+        <a href="https://youtube.com/{{ rep.youtube }}" target="_blank" rel="noopener" class="rep-social-btn">YouTube</a>
+        {% endif %}
+        {% if rep.instagram %}
+        <a href="https://instagram.com/{{ rep.instagram }}" target="_blank" rel="noopener" class="rep-social-btn">Instagram</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- External links -->
+<div class="rep-section">
+    <h2>More Information</h2>
+    <div class="rep-social-links">
+        <a href="{{ rep.congress_gov_url }}" target="_blank" rel="noopener" class="rep-social-btn">Congress.gov Profile</a>
+        {% if rep.opensecrets_url %}
+        <a href="{{ rep.opensecrets_url }}" target="_blank" rel="noopener" class="rep-social-btn">OpenSecrets</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

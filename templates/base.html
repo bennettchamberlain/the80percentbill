@@ -20,6 +20,9 @@
             <div class="sidebar-content">
                 <a href="/"><img src="{% static 'logo.png' %}" alt="The 80% Bill" class="sidebar-logo"></a>
                 <hr class="sidebar-divider">
+                <a href="{% url 'reps:directory' %}" class="sidebar-btn">
+                    🏛️ Find Your Representative
+                </a>
                 <a href="{% url 'data:index' %}" class="sidebar-btn">
                     📊 View anonymized data by district
                 </a>

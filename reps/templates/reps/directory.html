@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Find Your Representative — The 80% Bill{% endblock %}
+
+{% block main_content_class %}reps-page{% endblock %}
+
+{% block content %}
+<h1>Find Your Representative</h1>
+<p class="hero-subtitle">See where your members of Congress stand on the 20 bills that <span class="text-accent">80% of Americans</span> agree on.</p>
+
+<form method="get" class="rep-filters" role="search">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search by name…" class="rep-search-input" aria-label="Search by name">
+
+    <select name="state" aria-label="Filter by state">
+        <option value="">All States</option>
+        {% for abbr, name in states %}
+            <option value="{{ abbr }}" {% if state == abbr %}selected{% endif %}>{{ abbr }} — {{ name }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="party" aria-label="Filter by party">
+        <option value="">All Parties</option>
+        <option value="D" {% if party == "D" %}selected{% endif %}>Democrat</option>
+        <option value="R" {% if party == "R" %}selected{% endif %}>Republican</option>
+        <option value="I" {% if party == "I" %}selected{% endif %}>Independent</option>
+    </select>
+
+    <select name="chamber" aria-label="Filter by chamber">
+        <option value="">Both Chambers</option>
+        <option value="house" {% if chamber == "house" %}selected{% endif %}>House</option>
+        <option value="senate" {% if chamber == "senate" %}selected{% endif %}>Senate</option>
+    </select>
+
+    <button type="submit" class="btn">Filter</button>
+</form>
+
+<p class="rep-count">Showing <strong>{{ total }}</strong> representative{{ total|pluralize }}</p>
+
+<div class="rep-grid">
+    {% for rep in reps %}
+    <a href="{% url 'reps:detail' rep.bioguide_id %}" class="rep-card">
+        <img src="{{ rep.photo_url }}" alt="Photo of {{ rep.full_name }}" class="rep-card-photo" loading="lazy">
+        <div class="rep-card-info">
+            <span class="rep-card-name">{{ rep.full_name }}</span>
+            <span class="party-badge party-{{ rep.party }}">{{ rep.get_party_display }}</span>
+            <span class="rep-card-district">{{ rep.district_display }}</span>
+        </div>
+    </a>
+    {% empty %}
+    <p>No representatives found matching your filters.</p>
+    {% endfor %}
+</div>
+{% endblock %}
