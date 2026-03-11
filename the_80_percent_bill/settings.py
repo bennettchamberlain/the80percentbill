@@ -40,6 +40,7 @@ ALLOWED_HOSTS = [
     ".the80percentbill.com",
     ".railway.app",
     ".up.railway.app",
+    "bennett-linux-desktop.capybara-ulmer.ts.net",
 ]
 if extra_hosts := os.environ.get("ALLOWED_HOSTS"):
     ALLOWED_HOSTS.extend(h.strip() for h in extra_hosts.split(",") if h.strip())
