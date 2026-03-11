@@ -54,6 +54,7 @@ class Representative(models.Model):
 
     # Narrative content
     narrative = models.TextField(blank=True, default="")
+    narrative_sources = models.JSONField(default=list, blank=True)
     narrative_updated = models.DateTimeField(null=True, blank=True)
 
     last_updated = models.DateTimeField(auto_now=True)

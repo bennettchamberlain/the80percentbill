@@ -54,5 +54,36 @@ Imagine you're a journalist writing a fair but unflinching profile. The reader s
 - Every claim must be based on something you found in your research
 - Name specific bills, vote dates, and donor amounts when you find them
 - Do not use headers, bullet points, or markdown formatting — write in flowing paragraphs
-- Do not include citations or URLs in the text — keep it clean prose
 - Keep total length to 300-500 words
+
+### Citations
+
+Add numbered footnote markers like [1], [2], etc. in the narrative text after the claim they support. Then provide a separate JSON list of sources in the following format:
+
+```json
+[
+    {"title": "Source name or article title", "url": "https://..."},
+    {"title": "Another source", "url": "https://..."}
+]
+```
+
+The source list is 1-indexed — source [1] is the first item in the list, [2] is the second, etc.
+
+**Citation rules:**
+- Every major factual claim (votes, donor amounts, bill cosponsorship, STOCK Act violations, etc.) should have a citation
+- Use the most authoritative source you can find (congress.gov, opensecrets.org, senate.gov roll call votes, official government records)
+- If multiple claims share the same source, reuse the same footnote number
+- Do not cite general knowledge (party affiliation, state, etc.)
+- Aim for 5-15 sources per narrative
+
+**Output format:**
+
+Return your output in exactly this format:
+
+```
+NARRATIVE:
+[the narrative text with [1], [2] markers]
+
+SOURCES:
+[the JSON array of sources]
+```

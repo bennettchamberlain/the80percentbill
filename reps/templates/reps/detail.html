@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load reps_filters %}
 {% block title %}{{ rep.title }} {{ rep.full_name }} — The 80% Bill{% endblock %}
 
 {% block main_content_class %}reps-page{% endblock %}
@@ -19,13 +20,22 @@
     </div>
 </div>
 
-<!-- The Story -->
+<!-- Their Story -->
 <div class="rep-section">
-    <h2>The Story</h2>
+    <h2>Their Story</h2>
     {% if rep.narrative %}
     <div class="rep-narrative">
-        {{ rep.narrative|linebreaks }}
+        {{ rep.narrative|linebreaks|footnotes }}
     </div>
+    {% if rep.narrative_sources %}
+    <ol class="narrative-sources">
+        {% for source in rep.narrative_sources %}
+        <li id="source-{{ forloop.counter }}">
+            <a href="{{ source.url }}" target="_blank" rel="noopener">{{ source.title }}</a>
+        </li>
+        {% endfor %}
+    </ol>
+    {% endif %}
     {% else %}
     <div class="note-text">Profile narrative coming soon.</div>
     {% endif %}

@@ -813,6 +813,26 @@ textarea:focus {
     padding-bottom: 0.5rem;
 }
 
+.narrative-sources {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-border);
+    font-size: 0.85rem;
+    color: var(--gray-text);
+    padding-left: 1.25rem;
+}
+.narrative-sources li {
+    margin-bottom: 0.25rem;
+}
+.narrative-sources a {
+    color: var(--blue-primary);
+}
+.footnote-ref {
+    color: var(--blue-primary);
+    text-decoration: none;
+    font-size: 0.75rem;
+}
+
 .rep-meta {
     font-size: 0.85rem;
     color: var(--gray-text);
