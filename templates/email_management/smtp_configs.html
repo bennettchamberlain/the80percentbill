@@ -1,0 +1,18 @@
+{% extends 'email_management/base.html' %}
+
+{% block title %}SMTP Configurations - Email Management{% endblock %}
+
+{% block content %}
+<h1>🔧 SMTP Configurations</h1>
+<p>Coming soon: Manage your SMTP server configurations.</p>
+
+{% if configs %}
+<ul>
+    {% for config in configs %}
+    <li>{{ config.name }} - {{ config.smtp_host }}:{{ config.smtp_port }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No SMTP configurations yet. Create one in the admin panel.</p>
+{% endif %}
+{% endblock %}

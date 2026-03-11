@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Email Management{% endblock %} - The 80% Bill</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        .header nav a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .header nav a.active {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .messages {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <div class="header">
+        <div class="container">
+            <h1>📧 Email Management</h1>
+            <nav>
+                <a href="{% url 'email_dashboard' %}" {% if request.resolver_match.url_name == 'email_dashboard' %}class="active"{% endif %}>Dashboard</a>
+                <a href="{% url 'email_smtp_configs' %}" {% if request.resolver_match.url_name == 'email_smtp_configs' %}class="active"{% endif %}>SMTP</a>
+                <a href="{% url 'email_templates' %}" {% if request.resolver_match.url_name == 'email_templates' %}class="active"{% endif %}>Templates</a>
+                <a href="{% url 'email_campaigns' %}" {% if request.resolver_match.url_name == 'email_campaigns' %}class="active"{% endif %}>Campaigns</a>
+                <a href="{% url 'email_logs' %}" {% if request.resolver_match.url_name == 'email_logs' %}class="active"{% endif %}>Logs</a>
+                <a href="{% url 'email_logout' %}">Logout ({{ user.email }})</a>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="container">
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="message {{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

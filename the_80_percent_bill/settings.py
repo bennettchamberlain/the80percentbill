@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "bill",
     "pledge",
     "data",
+    "email_management",
     "django.contrib.admin",
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -74,6 +75,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+# Custom user model for email management
+AUTH_USER_MODEL = 'email_management.EmailUser'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
