@@ -14,11 +14,6 @@ python manage.py runserver 8000
 # Or use VS Code debugger (port 8000 configured in .vscode/launch.json)
 ```
 
-## Port Configuration
-
-- **Development:** 8000 (changed from 8080 to avoid conflict with Traefik dashboard)
-- **Production:** Configure via environment or WSGI server
-
 ## Environment
 
 Copy `.env.example` to `.env` and configure:
