@@ -7,8 +7,8 @@ from .models import BillPosition, Representative
 class RepresentativeAdmin(admin.ModelAdmin):
     list_display = ["full_name", "party", "state", "chamber", "in_office"]
     list_filter = ["party", "chamber", "state", "in_office"]
-    search_fields = ["first_name", "last_name", "full_name", "bioguide_id", "state"]
-    readonly_fields = ["last_updated"]
+    search_fields = ["first_name", "last_name", "full_name", "bioguide_id", "state", "narrative"]
+    readonly_fields = ["last_updated", "narrative_updated"]
 
 
 @admin.register(BillPosition)

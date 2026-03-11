@@ -19,6 +19,18 @@
     </div>
 </div>
 
+<!-- The Story -->
+<div class="rep-section">
+    <h2>The Story</h2>
+    {% if rep.narrative %}
+    <div class="rep-narrative">
+        {{ rep.narrative|linebreaks }}
+    </div>
+    {% else %}
+    <div class="note-text">Profile narrative coming soon.</div>
+    {% endif %}
+</div>
+
 <!-- Alignment score -->
 <div class="rep-section">
     <h2>80% Bill Alignment</h2>

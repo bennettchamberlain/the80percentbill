@@ -52,6 +52,10 @@ class Representative(models.Model):
     # 80% Bill alignment
     alignment_score = models.PositiveSmallIntegerField(null=True, blank=True)
 
+    # Narrative content
+    narrative = models.TextField(blank=True, default="")
+    narrative_updated = models.DateTimeField(null=True, blank=True)
+
     last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -62,7 +66,7 @@ class Representative(models.Model):
 
     @property
     def photo_url(self):
-        return f"https://theunitedstates.io/images/congress/225x275/{self.bioguide_id}.jpg"
+        return f"https://raw.githubusercontent.com/unitedstates/images/gh-pages/congress/225x275/{self.bioguide_id}.jpg"
 
     @property
     def district_display(self):
