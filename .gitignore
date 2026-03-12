@@ -4,3 +4,9 @@ __pycache__/
 db.sqlite3
 staticfiles/
 venv/
+alignment_batches/
+fix_and_run.py
+save_*.py
+.DS_Store
+.serena/
+.superpowers/
