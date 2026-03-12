@@ -9,7 +9,7 @@
 
 <!-- Header card -->
 <div class="rep-header-card">
-    <img src="{{ rep.photo_url }}" alt="Photo of {{ rep.full_name }}" class="rep-header-photo">
+    <img src="{{ rep.photo_url }}" alt="Photo of {{ rep.full_name }}" class="rep-header-photo" onerror="this.onerror=null;this.src='{{ rep.photo_url_fallback }}'">
     <div class="rep-header-info">
         <h1 class="rep-header-name">{{ rep.title }} {{ rep.full_name }}</h1>
         <span class="party-badge party-{{ rep.party }}">{{ rep.get_party_display }}</span>

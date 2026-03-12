@@ -33,12 +33,38 @@
     <button type="submit" class="btn">Filter</button>
 </form>
 
+<div class="score-slider-wrap" role="slider" aria-label="Filter by alignment tier" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
+    <div class="slider-track" id="slider-track">
+        <div class="slider-fill" id="slider-fill"></div>
+        <div class="slider-notch" data-tier="1"></div>
+        <div class="slider-notch" data-tier="2"></div>
+        <div class="slider-notch" data-tier="3"></div>
+        <div class="slider-notch" data-tier="4"></div>
+        <div class="slider-thumb" id="slider-thumb" tabindex="0"></div>
+    </div>
+    <div class="score-slider-tiers">
+        <span class="score-tier active" data-tier="0">All</span>
+        <span class="score-tier" data-tier="1">Dumpster Fire<br><small>0–3</small></span>
+        <span class="score-tier" data-tier="2">Warm Body<br><small>4–7</small></span>
+        <span class="score-tier" data-tier="3">Shows Promise<br><small>8–11</small></span>
+        <span class="score-tier" data-tier="4">Would Subscribe<br><small>12–15</small></span>
+        <span class="score-tier" data-tier="5">National Treasure<br><small>16–20</small></span>
+    </div>
+</div>
+
 <p class="rep-count">Showing <strong>{{ total }}</strong> representative{{ total|pluralize }}</p>
 
 <div class="rep-grid">
     {% for rep in reps %}
-    <a href="{% url 'reps:detail' rep.bioguide_id %}" class="rep-card">
-        <img src="{{ rep.photo_url }}" alt="Photo of {{ rep.full_name }}" class="rep-card-photo" loading="lazy">
+    <a href="{% url 'reps:detail' rep.bioguide_id %}" class="rep-card" data-score="{{ rep.alignment_score|default_if_none:'-1' }}">
+        <div class="rep-card-photo-wrap">
+            <img src="{{ rep.photo_url }}" alt="Photo of {{ rep.full_name }}" class="rep-card-photo" loading="lazy" onerror="this.onerror=null;this.src='{{ rep.photo_url_fallback }}'">
+            {% if rep.hover_text %}
+            <div class="rep-card-overlay">
+                <p>{{ rep.hover_text }}</p>
+            </div>
+            {% endif %}
+        </div>
         <div class="rep-card-info">
             <span class="rep-card-name">{{ rep.full_name }}</span>
             <span class="party-badge party-{{ rep.party }}">{{ rep.get_party_display }}</span>
@@ -49,4 +75,241 @@
     <p>No representatives found matching your filters.</p>
     {% endfor %}
 </div>
+
+<script>
+(function() {
+    var track = document.getElementById('slider-track');
+    var thumb = document.getElementById('slider-thumb');
+    var fill = document.getElementById('slider-fill');
+    var wrap = document.querySelector('.score-slider-wrap');
+    var cards = document.querySelectorAll('.rep-card');
+    var tiers = [null, [0,3], [4,7], [8,11], [12,15], [16,20]];
+    var tierLabels = document.querySelectorAll('.score-tier');
+    var countEl = document.querySelector('.rep-count strong');
+    var notches = track.querySelectorAll('.slider-notch');
+
+    var STEPS = 5;
+    var currentTier = 0;
+    var currentPos = 0;   // continuous 0–1 position
+    var dragging = false;
+    var animating = false;
+    var animId = null;
+
+    // Position notches evenly
+    notches.forEach(function(n) {
+        var t = parseInt(n.dataset.tier);
+        n.style.left = (t / STEPS * 100) + '%';
+    });
+
+    function posFromTier(tier) { return tier / STEPS; }
+    function tierFromPos(pos) { return Math.round(pos * STEPS); }
+
+    function setThumbPos(pos) {
+        currentPos = pos;
+        var pct = pos * 100;
+        thumb.style.left = pct + '%';
+        fill.style.width = pct + '%';
+    }
+
+    function haptic() {
+        if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    // --- Filtering ---
+    var hideTimers = [];
+    function filterCards(tier) {
+        if (tier === currentTier) return;
+        var prevTier = currentTier;
+        currentTier = tier;
+        wrap.setAttribute('aria-valuenow', tier);
+
+        tierLabels.forEach(function(el) {
+            el.classList.toggle('active', parseInt(el.dataset.tier) === tier);
+        });
+
+        // Clear pending hide timers
+        hideTimers.forEach(function(t) { clearTimeout(t); });
+        hideTimers = [];
+
+        var range = tiers[tier];
+        var visible = 0;
+        cards.forEach(function(card) {
+            var score = parseInt(card.dataset.score);
+            var show = !range || (score >= range[0] && score <= range[1]);
+            if (show) {
+                card.classList.remove('hiding', 'hidden-by-slider');
+                visible++;
+            } else {
+                if (!card.classList.contains('hidden-by-slider')) {
+                    card.classList.add('hiding');
+                    hideTimers.push(setTimeout(function() {
+                        card.classList.add('hidden-by-slider');
+                        card.classList.remove('hiding');
+                    }, 260));
+                }
+            }
+        });
+        countEl.textContent = visible;
+    }
+
+    // --- Spring animation ---
+    function springTo(target) {
+        if (animId) cancelAnimationFrame(animId);
+        animating = true;
+
+        var decay = 8;
+        var freq = 18;
+        var startPos = currentPos;
+        var startTime = null;
+
+        function step(ts) {
+            if (!startTime) startTime = ts;
+            var dt = (ts - startTime) / 1000;
+            var delta = startPos - target;
+            // Damped cosine oscillation
+            var offset = delta * Math.exp(-decay * dt) * Math.cos(freq * dt);
+            var pos = target + offset;
+
+            setThumbPos(pos);
+
+            // Check if settled (< 0.2% of range away from target)
+            if (Math.abs(offset) < 0.002 && dt > 0.05) {
+                setThumbPos(target);
+                animating = false;
+                animId = null;
+                filterCards(tierFromPos(target));
+                return;
+            }
+
+            // Update tier label during animation if we cross a boundary
+            var nearestTier = tierFromPos(pos);
+            if (nearestTier !== currentTier) {
+                filterCards(nearestTier);
+                haptic();
+            }
+
+            animId = requestAnimationFrame(step);
+        }
+        animId = requestAnimationFrame(step);
+    }
+
+    // --- Pointer handling ---
+    function getPosFromEvent(e) {
+        var rect = track.getBoundingClientRect();
+        var raw = (e.clientX - rect.left) / rect.width;
+
+        if (dragging) {
+            // Elastic resistance at edges
+            if (raw < 0) {
+                raw = -0.1 * Math.log(1 - raw * 5); // rubber-band
+                raw = Math.max(raw, -0.04);
+            } else if (raw > 1) {
+                var over = raw - 1;
+                raw = 1 + 0.1 * Math.log(1 + over * 5);
+                raw = Math.min(raw, 1.04);
+            }
+        } else {
+            raw = Math.max(0, Math.min(1, raw));
+        }
+        return raw;
+    }
+
+    function startDrag(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dragging = true;
+        if (animId) { cancelAnimationFrame(animId); animId = null; animating = false; }
+        thumb.classList.add('dragging');
+        thumb.setPointerCapture(e.pointerId);
+
+        var pos = getPosFromEvent(e);
+        setThumbPos(pos);
+
+        var crossedTier = tierFromPos(Math.max(0, Math.min(1, pos)));
+        if (crossedTier !== currentTier) {
+            haptic();
+            filterCards(crossedTier);
+        }
+    }
+
+    function onPointerMove(e) {
+        if (!dragging) return;
+        e.preventDefault();
+        var pos = getPosFromEvent(e);
+        setThumbPos(pos);
+
+        var crossedTier = tierFromPos(Math.max(0, Math.min(1, pos)));
+        if (crossedTier !== currentTier) {
+            haptic();
+            filterCards(crossedTier);
+        }
+    }
+
+    function onPointerUp(e) {
+        if (!dragging) return;
+        dragging = false;
+        thumb.classList.remove('dragging');
+
+        // Clamp to valid range and spring to nearest tier
+        var clamped = Math.max(0, Math.min(1, currentPos));
+        var target = posFromTier(tierFromPos(clamped));
+        springTo(target);
+    }
+
+    // Use pointer capture on the thumb for reliable drag across all browsers
+    thumb.addEventListener('pointerdown', startDrag);
+    thumb.addEventListener('pointermove', onPointerMove);
+    thumb.addEventListener('pointerup', onPointerUp);
+    thumb.addEventListener('lostpointercapture', onPointerUp);
+
+    // Clicking on the track jumps the thumb there, then starts drag
+    track.addEventListener('pointerdown', function(e) {
+        if (e.target === thumb) return; // thumb handles its own
+        e.preventDefault();
+        // Jump thumb to click position
+        var pos = getPosFromEvent(e);
+        setThumbPos(pos);
+        var crossedTier = tierFromPos(Math.max(0, Math.min(1, pos)));
+        if (crossedTier !== currentTier) {
+            haptic();
+            filterCards(crossedTier);
+        }
+        // Spring to nearest snap point
+        var clamped = Math.max(0, Math.min(1, pos));
+        var target = posFromTier(tierFromPos(clamped));
+        springTo(target);
+    });
+
+    // Keyboard support
+    thumb.addEventListener('keydown', function(e) {
+        var tier = currentTier;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+            tier = Math.min(STEPS, tier + 1);
+            e.preventDefault();
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+            tier = Math.max(0, tier - 1);
+            e.preventDefault();
+        } else if (e.key === 'Home') {
+            tier = 0; e.preventDefault();
+        } else if (e.key === 'End') {
+            tier = STEPS; e.preventDefault();
+        } else { return; }
+
+        haptic();
+        springTo(posFromTier(tier));
+    });
+
+    // Tier label clicks
+    tierLabels.forEach(function(label) {
+        label.addEventListener('click', function() {
+            var tier = parseInt(this.dataset.tier);
+            haptic();
+            springTo(posFromTier(tier));
+        });
+    });
+
+    // Initialize position
+    setThumbPos(0);
+})();
+</script>
 {% endblock %}

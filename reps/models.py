@@ -57,6 +57,9 @@ class Representative(models.Model):
     narrative_sources = models.JSONField(default=list, blank=True)
     narrative_updated = models.DateTimeField(null=True, blank=True)
 
+    # Hover one-liner for directory card
+    hover_text = models.CharField(max_length=200, blank=True, default="")
+
     last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -68,6 +71,10 @@ class Representative(models.Model):
     @property
     def photo_url(self):
         return f"https://raw.githubusercontent.com/unitedstates/images/gh-pages/congress/225x275/{self.bioguide_id}.jpg"
+
+    @property
+    def photo_url_fallback(self):
+        return f"https://bioguide.congress.gov/bioguide/photo/{self.bioguide_id[0]}/{self.bioguide_id}.jpg"
 
     @property
     def district_display(self):
