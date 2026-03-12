@@ -109,7 +109,7 @@
                 <a href="{% url 'email_smtp_configs' %}" {% if request.resolver_match.url_name == 'email_smtp_configs' %}class="active"{% endif %}>SMTP</a>
                 <a href="{% url 'email_templates' %}" {% if request.resolver_match.url_name == 'email_templates' %}class="active"{% endif %}>Templates</a>
                 <a href="{% url 'email_campaigns' %}" {% if request.resolver_match.url_name == 'email_campaigns' %}class="active"{% endif %}>Campaigns</a>
-                <a href="{% url 'email_logs' %}" {% if request.resolver_match.url_name == 'email_logs' %}class="active"{% endif %}>Logs</a>
+                <a href="{% url 'email_logs' %}" {% if request.resolver_match.url_name == 'email_logs' or request.resolver_match.url_name == 'email_history' %}class="active"{% endif %}>History</a>
                 <a href="{% url 'email_logout' %}">Logout ({{ user.email }})</a>
             </nav>
         </div>
