@@ -61,8 +61,19 @@ class EmailSendingService:
             msg['Subject'] = subject
             msg['From'] = formataddr((self.config.from_name, sender_email))
             msg['To'] = to_email
+            msg['Reply-To'] = sender_email
             
-            # Add bodies
+            # Add headers to improve deliverability and inbox placement
+            msg['X-Mailer'] = 'The 80% Bill Email System'
+            msg['X-Priority'] = '3'  # Normal priority
+            msg['List-Unsubscribe'] = f'<mailto:{sender_email}?subject=unsubscribe>'
+            
+            # Important: Add Message-ID for threading and legitimacy
+            import time
+            import random
+            msg['Message-ID'] = f'<{int(time.time())}.{random.randint(1000,9999)}@the80percentbill.com>'
+            
+            # Add bodies (plain text first, then HTML for better spam score)
             if text_body:
                 msg.attach(MIMEText(text_body, 'plain'))
             if html_body:
