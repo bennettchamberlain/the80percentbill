@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -189,16 +189,45 @@ def campaigns(request):
 @user_passes_test(can_access_email_management, login_url='/email/login/')
 def logs(request):
     """
-    View email send logs.
+    View email history (renamed from logs to history conceptually).
+    Data table view with filtering and search.
     """
     user = request.user
     
-    logs = EmailLog.objects.filter(user=user).order_by('-created_at')
+    # Get all logs for this user
+    logs = EmailLog.objects.filter(user=user).select_related('contact', 'campaign').order_by('-created_at')
     
-    # Filter by status if provided
-    status_filter = request.GET.get('status')
+    # Search by recipient email or name
+    search = request.GET.get('search', '').strip()
+    if search:
+        logs = logs.filter(
+            models.Q(recipient_email__icontains=search) |
+            models.Q(contact__first_name__icontains=search) |
+            models.Q(contact__last_name__icontains=search)
+        )
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '').strip()
     if status_filter:
         logs = logs.filter(status=status_filter)
+    
+    # Filter by date range
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
+    if date_from:
+        from datetime import datetime
+        logs = logs.filter(created_at__gte=datetime.strptime(date_from, '%Y-%m-%d'))
+    if date_to:
+        from datetime import datetime, timedelta
+        # Include the entire end date
+        end_date = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+        logs = logs.filter(created_at__lt=end_date)
+    
+    # Get stats
+    total_count = EmailLog.objects.filter(user=user).count()
+    sent_count = EmailLog.objects.filter(user=user, status='sent').count()
+    failed_count = EmailLog.objects.filter(user=user, status='failed').count()
+    success_rate = (sent_count / total_count * 100) if total_count > 0 else 0
     
     # Pagination
     from django.core.paginator import Paginator
@@ -208,10 +237,49 @@ def logs(request):
     
     context = {
         'logs': page_obj,
+        'search': search,
         'status_filter': status_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_count': total_count,
+        'sent_count': sent_count,
+        'failed_count': failed_count,
+        'success_rate': success_rate,
     }
     
-    return render(request, 'email_management/logs.html', context)
+    return render(request, 'email_management/history.html', context)
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def recipient_detail(request, contact_id):
+    """
+    Timeline view of all emails sent to a specific recipient.
+    """
+    from .models import Contact, EmailLog
+    
+    contact = get_object_or_404(Contact, id=contact_id)
+    
+    # Get all emails sent to this contact
+    logs = EmailLog.objects.filter(
+        contact=contact,
+        user=request.user
+    ).select_related('campaign').order_by('-created_at')
+    
+    # Stats for this recipient
+    total_sent = logs.filter(status='sent').count()
+    total_failed = logs.filter(status='failed').count()
+    total_emails = logs.count()
+    
+    context = {
+        'contact': contact,
+        'logs': logs,
+        'total_sent': total_sent,
+        'total_failed': total_failed,
+        'total_emails': total_emails,
+    }
+    
+    return render(request, 'email_management/recipient_detail.html', context)
 
 
 @login_required(login_url='/email/login/')
