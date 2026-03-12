@@ -173,10 +173,9 @@
                     <a class="dropdown-toggle" onclick="toggleDropdown(event)">⚙️</a>
                     <div class="dropdown-menu">
                         <a href="{% url 'email_smtp_configs' %}">SMTP Configuration</a>
+                        <a href="{% url 'email_logout' %}">Logout ({{ user.email }})</a>
                     </div>
                 </div>
-                
-                <a href="{% url 'email_logout' %}">Logout ({{ user.email }})</a>
             </nav>
         </div>
     </div>
