@@ -60,6 +60,65 @@
             background: rgba(255,255,255,0.2);
         }
         
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-toggle {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 18px;
+        }
+        
+        .dropdown-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 5px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 180px;
+            z-index: 1000;
+        }
+        
+        .dropdown.active .dropdown-menu {
+            display: block;
+        }
+        
+        .dropdown-menu a {
+            display: block;
+            padding: 12px 20px;
+            color: #2c3e50;
+            text-decoration: none;
+            transition: background 0.2s;
+            margin: 0;
+        }
+        
+        .dropdown-menu a:hover {
+            background: #f8f9fa;
+        }
+        
+        .dropdown-menu a:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .dropdown-menu a:last-child {
+            border-radius: 0 0 6px 6px;
+        }
+        
         .messages {
             list-style: none;
             margin-bottom: 20px;
@@ -106,10 +165,17 @@
             <nav>
                 <a href="{% url 'email_dashboard' %}" {% if request.resolver_match.url_name == 'email_dashboard' %}class="active"{% endif %}>Dashboard</a>
                 <a href="{% url 'email_test' %}" {% if request.resolver_match.url_name == 'email_test' %}class="active"{% endif %}>Send Test</a>
-                <a href="{% url 'email_smtp_configs' %}" {% if request.resolver_match.url_name == 'email_smtp_configs' %}class="active"{% endif %}>SMTP</a>
                 <a href="{% url 'email_templates' %}" {% if request.resolver_match.url_name == 'email_templates' %}class="active"{% endif %}>Templates</a>
                 <a href="{% url 'email_campaigns' %}" {% if request.resolver_match.url_name == 'email_campaigns' %}class="active"{% endif %}>Campaigns</a>
                 <a href="{% url 'email_logs' %}" {% if request.resolver_match.url_name == 'email_logs' or request.resolver_match.url_name == 'email_history' %}class="active"{% endif %}>History</a>
+                
+                <div class="dropdown" id="settings-dropdown">
+                    <a class="dropdown-toggle" onclick="toggleDropdown(event)">⚙️</a>
+                    <div class="dropdown-menu">
+                        <a href="{% url 'email_smtp_configs' %}">SMTP Configuration</a>
+                    </div>
+                </div>
+                
                 <a href="{% url 'email_logout' %}">Logout ({{ user.email }})</a>
             </nav>
         </div>
@@ -129,5 +195,22 @@
     </div>
     
     {% block extra_js %}{% endblock %}
+    
+    <script>
+        function toggleDropdown(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropdown = document.getElementById('settings-dropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('settings-dropdown');
+            if (dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>
