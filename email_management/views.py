@@ -254,19 +254,23 @@ def test_email(request):
                 # Get from pledge
                 pledge = Pledge.objects.get(id=pledge_id)
                 recipient_email = pledge.email
+                
+                # Extract state from district if possible (e.g., "CA-12" -> "CA")
+                state = pledge.district.split('-')[0] if '-' in pledge.district else ''
+                
                 contact, created = Contact.objects.get_or_create(
                     email=recipient_email,
                     defaults={
                         'first_name': pledge.name.split()[0] if pledge.name else '',
                         'district': pledge.district,
-                        'state': pledge.state,
+                        'state': state,
                         'source': 'pledge_form',
                     }
                 )
             elif recipient_email:
                 # Manual email
                 contact, created = Contact.objects.get_or_create(
-                    recipient_email,
+                    email=recipient_email,
                     defaults={
                         'source': 'test_email',
                     }

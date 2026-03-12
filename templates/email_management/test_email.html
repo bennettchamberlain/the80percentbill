@@ -191,7 +191,7 @@
                             data-email="{{ pledge.email }}"
                             data-name="{{ pledge.name }}"
                             data-district="{{ pledge.district }}"
-                            data-state="{{ pledge.state }}">
+                            data-rep="{{ pledge.rep }}">
                         {{ pledge.name }} ({{ pledge.email }}) - {{ pledge.district }}
                     </option>
                     {% endfor %}
@@ -255,6 +255,7 @@
     </div>
 </form>
 
+{% verbatim %}
 <script>
 let selectedTemplate = null;
 
@@ -329,7 +330,10 @@ document.getElementById('pledge-select').addEventListener('change', function(e) 
     const name = option.dataset.name || '';
     const email = option.dataset.email || '';
     const district = option.dataset.district || '';
-    const state = option.dataset.state || '';
+    const rep = option.dataset.rep || '';
+    
+    // Extract state from district (e.g., "CA-12" -> "CA")
+    const state = district.includes('-') ? district.split('-')[0] : '';
     
     // Fill in variables
     if (document.getElementById('var_first_name')) {
@@ -344,10 +348,14 @@ document.getElementById('pledge-select').addEventListener('change', function(e) 
     if (document.getElementById('var_state')) {
         document.getElementById('var_state').value = state;
     }
+    if (document.getElementById('var_representative_name')) {
+        document.getElementById('var_representative_name').value = rep;
+    }
 });
 
 function previewEmail() {
     alert('Preview feature coming soon! For now, send a test email to yourself.');
 }
 </script>
+{% endverbatim %}
 {% endblock %}
