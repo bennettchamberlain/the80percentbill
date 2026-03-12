@@ -402,8 +402,24 @@
             <textarea id="code-editor" placeholder="HTML content..."></textarea>
         </div>
         <div class="editor-footer">
-            <button class="btn btn-secondary" onclick="closeEditor()">Cancel</button>
+            <button class="btn btn-secondary" onclick="previewTemplate()">👁️ Preview</button>
             <button class="btn btn-primary" onclick="saveTemplate()">💾 Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="preview-modal" class="modal" style="display: none;">
+    <div class="modal-content editor-modal" style="max-width: 800px;">
+        <div class="editor-header">
+            <h2>📧 Email Preview</h2>
+            <button class="close-btn" onclick="closePreview()">&times;</button>
+        </div>
+        <div class="editor-body" style="background: white; padding: 20px; overflow-y: auto; max-height: 70vh;">
+            <iframe id="preview-frame" style="width: 100%; height: 100%; min-height: 500px; border: none;"></iframe>
+        </div>
+        <div class="editor-footer">
+            <button class="btn btn-secondary" onclick="closePreview()">Close</button>
         </div>
     </div>
 </div>
@@ -598,6 +614,25 @@ function editTemplate(category, filename) {
 function closeEditor() {
     document.getElementById('editor-modal').classList.remove('active');
     currentEditingFile = null;
+}
+
+function previewTemplate() {
+    const htmlContent = document.getElementById('code-editor').value;
+    const previewFrame = document.getElementById('preview-frame');
+    const previewModal = document.getElementById('preview-modal');
+    
+    // Write HTML to iframe
+    const iframeDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+    
+    // Show preview modal
+    previewModal.style.display = 'flex';
+}
+
+function closePreview() {
+    document.getElementById('preview-modal').style.display = 'none';
 }
 
 function saveTemplate() {
