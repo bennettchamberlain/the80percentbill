@@ -155,17 +155,14 @@ def smtp_configs(request):
 @user_passes_test(can_access_email_management, login_url='/email/login/')
 def templates(request):
     """
-    View and manage email templates.
+    View and manage HTML email templates from filesystem.
     """
-    user = request.user
+    from .template_loader import EmailTemplateLoader
     
-    # Get user's templates and shared templates
-    templates = EmailTemplate.objects.filter(
-        models.Q(user=user) | models.Q(user__isnull=True)
-    ).order_by('-created_at')
+    templates_dict = EmailTemplateLoader.get_available_templates()
     
     context = {
-        'templates': templates,
+        'templates': templates_dict,
     }
     
     return render(request, 'email_management/templates.html', context)
@@ -331,3 +328,143 @@ from django.db import models
 from .template_loader import EmailTemplateLoader
 from .email_service import EmailSendingService
 from pledge.models import Pledge
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def template_upload(request):
+    """
+    Upload HTML template files.
+    """
+    import os
+    from django.http import JsonResponse
+    from .template_loader import EmailTemplateLoader
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'})
+    
+    folder = request.POST.get('folder', 'common')
+    if folder not in ['common', 'district-emails']:
+        return JsonResponse({'success': False, 'error': 'Invalid folder'})
+    
+    files = request.FILES.getlist('files')
+    if not files:
+        return JsonResponse({'success': False, 'error': 'No files provided'})
+    
+    uploaded_count = 0
+    template_dir = os.path.join(EmailTemplateLoader.TEMPLATE_DIR, folder)
+    os.makedirs(template_dir, exist_ok=True)
+    
+    for file in files:
+        if not file.name.endswith('.html'):
+            continue
+        
+        file_path = os.path.join(template_dir, file.name)
+        with open(file_path, 'wb+') as destination:
+            for chunk in file.chunks():
+                destination.write(chunk)
+        uploaded_count += 1
+    
+    return JsonResponse({'success': True, 'count': uploaded_count})
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def template_get(request):
+    """
+    Get template content for editing.
+    """
+    from django.http import JsonResponse
+    from .template_loader import EmailTemplateLoader
+    
+    category = request.GET.get('category')
+    filename = request.GET.get('filename')
+    
+    if not category or not filename:
+        return JsonResponse({'success': False, 'error': 'Missing parameters'})
+    
+    try:
+        content = EmailTemplateLoader.load_template(category, filename)
+        return JsonResponse({'success': True, 'content': content})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def template_save(request):
+    """
+    Save template content.
+    """
+    import os
+    import json
+    from django.http import JsonResponse
+    from .template_loader import EmailTemplateLoader
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'})
+    
+    try:
+        data = json.loads(request.body)
+        category = data.get('category')
+        filename = data.get('filename')
+        content = data.get('content')
+        
+        if not category or not filename or content is None:
+            return JsonResponse({'success': False, 'error': 'Missing parameters'})
+        
+        if category not in ['common', 'district-emails']:
+            return JsonResponse({'success': False, 'error': 'Invalid category'})
+        
+        template_dir = os.path.join(EmailTemplateLoader.TEMPLATE_DIR, category)
+        os.makedirs(template_dir, exist_ok=True)
+        
+        file_path = os.path.join(template_dir, filename)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def template_delete(request):
+    """
+    Delete template files.
+    """
+    import os
+    import json
+    from django.http import JsonResponse
+    from .template_loader import EmailTemplateLoader
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'})
+    
+    try:
+        data = json.loads(request.body)
+        files = data.get('files', [])
+        
+        if not files:
+            return JsonResponse({'success': False, 'error': 'No files specified'})
+        
+        deleted_count = 0
+        for file_path in files:
+            # file_path format: "category/filename.html"
+            parts = file_path.split('/')
+            if len(parts) != 2:
+                continue
+            
+            category, filename = parts
+            if category not in ['common', 'district-emails']:
+                continue
+            
+            full_path = os.path.join(EmailTemplateLoader.TEMPLATE_DIR, category, filename)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+                deleted_count += 1
+        
+        return JsonResponse({'success': True, 'count': deleted_count})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

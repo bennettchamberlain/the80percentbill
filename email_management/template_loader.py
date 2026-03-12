@@ -31,13 +31,15 @@ class EmailTemplateLoader:
         for category in ['common', 'district-emails']:
             category_path = os.path.join(cls.TEMPLATE_DIR, category)
             if os.path.exists(category_path):
-                templates[category] = []
+                # Use underscore in dict key for Django templates
+                dict_key = category.replace('-', '_')
+                templates[dict_key] = []
                 for filename in os.listdir(category_path):
                     if filename.endswith('.html'):
-                        templates[category].append({
+                        templates[dict_key].append({
                             'name': filename.replace('.html', '').replace('-', ' ').title(),
                             'filename': filename,
-                            'category': category,
+                            'category': category,  # Keep original hyphenated name
                             'path': f'{category}/{filename}'
                         })
         

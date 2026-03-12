@@ -18,4 +18,10 @@ urlpatterns = [
     path('templates/', views.templates, name='email_templates'),
     path('campaigns/', views.campaigns, name='email_campaigns'),
     path('logs/', views.logs, name='email_logs'),
+    
+    # Template management API
+    path('templates/upload/', views.template_upload, name='template_upload'),
+    path('templates/get/', views.template_get, name='template_get'),
+    path('templates/save/', views.template_save, name='template_save'),
+    path('templates/delete/', views.template_delete, name='template_delete'),
 ]
