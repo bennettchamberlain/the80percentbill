@@ -90,8 +90,9 @@
             border: 1px solid #e0e0e0;
             border-radius: 6px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            min-width: 180px;
+            min-width: 200px;
             z-index: 1000;
+            padding: 8px 0;
         }
         
         .dropdown.active .dropdown-menu {
@@ -104,9 +105,10 @@
             color: #000 !important;
             text-decoration: none;
             transition: background 0.2s;
-            margin: 0;
+            margin: 4px 8px;
             font-weight: 500;
             font-size: 14px;
+            border-radius: 4px;
         }
         
         .dropdown-menu a:hover {
@@ -115,11 +117,11 @@
         }
         
         .dropdown-menu a:first-child {
-            border-radius: 6px 6px 0 0;
+            margin-top: 0;
         }
         
         .dropdown-menu a:last-child {
-            border-radius: 0 0 6px 6px;
+            margin-bottom: 0;
         }
         
         .messages {
