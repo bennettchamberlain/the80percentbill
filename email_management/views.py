@@ -311,7 +311,7 @@ def test_email(request):
     from .models import SenderEmail
     
     templates = EmailTemplateLoader.get_available_templates()
-    pledges = Pledge.objects.all().order_by('-created_at')[:50]  # Recent 50 pledges
+    pledges = Pledge.objects.all().order_by('-timestamp')[:50]  # Recent 50 pledges
     sender_emails = SenderEmail.objects.filter(is_active=True).order_by('-is_verified', 'email')
     
     context = {
