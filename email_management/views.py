@@ -87,19 +87,19 @@ def email_dashboard(request):
     ).order_by('-created_at')[:10]
     
     # Get user's recent campaigns
-    campaigns = EmailCampaign.objects.filter(user=user).order_by('-created_at')[:10]
+    campaigns = EmailCampaign.objects.filter(created_by=user).order_by('-created_at')[:10]
     
     # Get recent email logs
     logs = EmailLog.objects.filter(user=user).order_by('-created_at')[:20]
     
     # Calculate stats
-    total_campaigns = EmailCampaign.objects.filter(user=user).count()
+    total_campaigns = EmailCampaign.objects.filter(created_by=user).count()
     total_sent = EmailLog.objects.filter(user=user, status='sent').count()
     total_failed = EmailLog.objects.filter(user=user, status='failed').count()
     
     # Campaigns in progress
     active_campaigns = EmailCampaign.objects.filter(
-        user=user,
+        created_by=user,
         status__in=['scheduled', 'sending']
     ).count()
     
@@ -176,7 +176,7 @@ def campaigns(request):
     """
     user = request.user
     
-    campaigns = EmailCampaign.objects.filter(user=user).order_by('-created_at')
+    campaigns = EmailCampaign.objects.filter(created_by=user).order_by('-created_at')
     
     context = {
         'campaigns': campaigns,
