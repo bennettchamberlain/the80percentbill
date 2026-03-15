@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from .models import (
     EmailUser,
     Contact,
@@ -203,12 +204,8 @@ class EmailUserAdmin(BaseUserAdmin):
     
     def can_access_email_management_badge(self, obj):
         if obj.can_access_email_management:
-            return format_html(
-                '<span style="color: green; font-weight: bold;">✓ Yes</span>'
-            )
-        return format_html(
-            '<span style="color: #ccc;">✗ No</span>'
-        )
+            return mark_safe('<span style="color: green; font-weight: bold;">✓ Yes</span>')
+        return mark_safe('<span style="color: #ccc;">✗ No</span>')
     can_access_email_management_badge.short_description = 'Email Access'
     
     def save_model(self, request, obj, form, change):
@@ -491,12 +488,12 @@ class SenderEmailAdmin(admin.ModelAdmin):
     
     def verified_badge(self, obj):
         if obj.is_verified:
-            return format_html('<span style="color: green; font-weight: bold;">✓ Verified</span>')
-        return format_html('<span style="color: orange;">⚠ Not Verified</span>')
+            return mark_safe('<span style="color: green; font-weight: bold;">✓ Verified</span>')
+        return mark_safe('<span style="color: orange;">⚠ Not Verified</span>')
     verified_badge.short_description = 'Verified'
     
     def active_badge(self, obj):
         if obj.is_active:
-            return format_html('<span style="color: green;">● Active</span>')
-        return format_html('<span style="color: #ccc;">○ Inactive</span>')
+            return mark_safe('<span style="color: green;">● Active</span>')
+        return mark_safe('<span style="color: #ccc;">○ Inactive</span>')
     active_badge.short_description = 'Status'
