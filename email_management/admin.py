@@ -356,36 +356,27 @@ class EmailCampaignAdmin(admin.ModelAdmin):
     """
     list_display = [
         'name',
-        'user',
+        'created_by',
         'status_badge',
-        'total_recipients',
-        'sent_count',
-        'failed_count',
-        'progress_badge',
+        'template',
+        'segment',
+        'contact_list',
+        'start_date',
         'created_at',
     ]
-    list_filter = ['status', 'created_at', 'user']
-    search_fields = ['name', 'subject']
+    list_filter = ['status', 'created_at', 'created_by']
+    search_fields = ['name', 'description']
     ordering = ['-created_at']
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'user', 'status')
+            'fields': ('name', 'description', 'created_by', 'status')
         }),
         ('Configuration', {
-            'fields': ('smtp_config', 'template')
+            'fields': ('template', 'segment', 'contact_list')
         }),
-        ('Email Content', {
-            'fields': ('subject', 'body_html', 'body_text')
-        }),
-        ('Recipients', {
-            'fields': ('recipients', 'total_recipients')
-        }),
-        ('Statistics', {
-            'fields': ('sent_count', 'failed_count')
-        }),
-        ('Scheduling', {
-            'fields': ('scheduled_at', 'sent_at')
+        ('Sending Controls', {
+            'fields': ('daily_send_limit', 'batch_size', 'start_date')
         }),
         ('Metadata', {
             'fields': ('created_at', 'updated_at'),
@@ -393,15 +384,16 @@ class EmailCampaignAdmin(admin.ModelAdmin):
         }),
     )
     
-    readonly_fields = ['total_recipients', 'sent_count', 'failed_count', 'created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at']
     
     def status_badge(self, obj):
         colors = {
             'draft': '#666',
             'scheduled': 'orange',
             'sending': 'blue',
-            'sent': 'green',
-            'failed': 'red',
+            'paused': 'purple',
+            'completed': 'green',
+            'cancelled': 'red',
         }
         return format_html(
             '<span style="color: {}; font-weight: bold;">{}</span>',
@@ -409,17 +401,6 @@ class EmailCampaignAdmin(admin.ModelAdmin):
             obj.get_status_display()
         )
     status_badge.short_description = 'Status'
-    
-    def progress_badge(self, obj):
-        if obj.total_recipients == 0:
-            return '-'
-        percentage = (obj.sent_count / obj.total_recipients) * 100
-        return format_html(
-            '<span style="color: {};">{:.1f}%</span>',
-            'green' if percentage == 100 else 'orange',
-            percentage
-        )
-    progress_badge.short_description = 'Progress'
 
 
 @admin.register(EmailLog)
