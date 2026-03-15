@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('email_management', '0002_senderemail'),
-        ('pledge', '0001_initial'),
+        ('pledge', '0002_enable_rls'),
     ]
 
     operations = [

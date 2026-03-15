@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('email_management', '0005_replace_emailcampaign'),
-        ('pledge', '0002_pledge_contact_pledge_pledge_pled_contact_dba015_idx'),
+        ('pledge', '0003_pledge_contact_pledge_pledge_pled_contact_dba015_idx'),
     ]
 
     operations = [
