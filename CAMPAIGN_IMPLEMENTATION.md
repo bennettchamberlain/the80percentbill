@@ -29,63 +29,89 @@ recipient.source_id
 
 **3. Database Schema**
 ```sql
--- Pledge gets optional link to contact
 ALTER TABLE pledge_pledge
 ADD COLUMN contact_id INTEGER NULL
 REFERENCES email_management_contact(id)
 ON DELETE SET NULL;
-
-CREATE INDEX ON pledge_pledge(contact_id);
 ```
 
-**4. Documentation**
-- `docs/PLEDGE_CONTACT_RELATIONSHIP.md`
-- Comprehensive relationship explanation
-- SQL reference
-- Usage examples
+**Files**: `pledge/models.py`, `email_management/recipient.py`, `docs/PLEDGE_CONTACT_RELATIONSHIP.md`
 
-### Architecture
+---
 
-```
-Contact (general recipients)
-  ↑
-  │ (nullable FK)
-  │
-Pledge (campaign-specific)
+## Phase 2: Contact Lists ✅ COMPLETE
 
-Recipient (abstraction)
-├── from_contact()
-└── from_pledge()
+### What Was Implemented
+
+**1. Contact Lists Table**
+```python
+ContactList
+├── name
+├── description
+├── created_by
+└── created_at
 ```
 
-### Key Design Decisions
+**2. List Membership with Mutual Exclusivity**
+```python
+ContactListMember
+├── list_id (FK → ContactList)
+├── contact_id (nullable FK → Contact)
+├── pledge_id (nullable FK → Pledge)
+└── created_at
 
-1. **FK on Pledge side** - Pledges optionally reference contacts
-2. **Nullable** - Incremental adoption, no forced migration
-3. **Both tables independent** - Each can function alone
-4. **Recipient abstraction** - Campaign logic operates on unified interface
+# Constraint: Exactly ONE of contact_id or pledge_id must be set
+```
 
-### Testing
-✅ Migration applied
-✅ Pledge.contact FK works (currently null)
-✅ Recipient.from_pledge() tested
-✅ Recipient.from_contact() tested
-✅ Metadata properly extracted from both sources
+**3. Validation Logic**
+- `clean()` method enforces mutual exclusivity
+- Both null → ValidationError
+- Both set → ValidationError
+- One set → Valid
 
-### Files Changed
-- `pledge/models.py` - Added contact FK and documentation
-- `pledge/migrations/0002_pledge_contact_*.py` - DB migration
-- `email_management/recipient.py` - Recipient abstraction
-- `docs/PLEDGE_CONTACT_RELATIONSHIP.md` - Comprehensive docs
+**4. Features**
+- `get_recipient()` converts member to Recipient instance
+- `member_count()` helper for list display
+- Admin interface with inline member editing
+- Indexes on contact_id, pledge_id, list_id
+
+**5. Database Schema**
+```sql
+CREATE TABLE contact_lists (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    description TEXT,
+    created_by_id INTEGER REFERENCES email_management_emailuser(id),
+    created_at TIMESTAMP
+);
+
+CREATE TABLE contact_list_members (
+    id SERIAL PRIMARY KEY,
+    list_id INTEGER REFERENCES contact_lists(id) ON DELETE CASCADE,
+    contact_id INTEGER NULL REFERENCES email_management_contact(id) ON DELETE CASCADE,
+    pledge_id INTEGER NULL REFERENCES pledge_pledge(id) ON DELETE CASCADE,
+    created_at TIMESTAMP,
+    UNIQUE (list_id, contact_id),
+    UNIQUE (list_id, pledge_id)
+);
+
+CREATE INDEX ON contact_list_members(contact_id);
+CREATE INDEX ON contact_list_members(pledge_id);
+CREATE INDEX ON contact_list_members(list_id);
+```
+
+**Files**: `email_management/models.py`, `email_management/admin.py`, `docs/CONTACT_LISTS.md`
+
+**Testing**:
+- ✅ Contact-only members work
+- ✅ Pledge-only members work
+- ✅ Both fields correctly rejected
+- ✅ Empty member correctly rejected
+- ✅ get_recipient() returns proper instances
 
 ---
 
 ## Next Phases (NOT YET IMPLEMENTED)
-
-### Phase 2: Segmentation System
-- Segment model for dynamic filtering
-- Filter criteria (pledge status, district, engagement)
-- Segment evaluation logic
 
 ### Phase 3: Campaign Core Tables
 - Campaign model
@@ -113,4 +139,4 @@ Recipient (abstraction)
 
 ---
 
-**Status**: Phase 1 complete. Foundation established. Ready for Phase 2.
+**Status**: Phases 1-2 complete. Foundation and lists established. Ready for Phase 3.
