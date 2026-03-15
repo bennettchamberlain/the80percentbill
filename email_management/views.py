@@ -676,9 +676,7 @@ from .email_service import EmailSendingService
 from pledge.models import Pledge
 
 
-@login_required(login_url='/email/login/')
-@user_passes_test(can_access_email_management, login_url='/email/login/')
 # File-based template management functions removed
 # Templates are now managed via Django admin (/admin/email_management/emailtemplate/)
-# Old functions: template_upload, template_get, template_save, template_delete
+# Old functions: template_upload, template_get, template_save, template_delete (removed in commit 964cd4d)
 
