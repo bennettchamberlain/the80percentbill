@@ -1,0 +1,103 @@
+{% extends 'email_management/base.html' %}
+{% load humanize %}
+
+{% block title %}Recipients - {{ campaign.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .back-link { color: #3498db; text-decoration: none; font-size: 14px; margin-bottom: 10px; display: inline-block; }
+    .page-header { margin-bottom: 30px; }
+    .page-header h1 { font-size: 32px; font-weight: 600; }
+    .filters { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+    .filter-group { flex: 1; min-width: 200px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .filter-group input, .filter-group select { width: 100%; padding: 8px 12px; border: 1px solid #dfe6e9; border-radius: 6px; }
+    .btn { padding: 10px 20px; border-radius: 6px; font-weight: 500; text-decoration: none; border: none; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #3498db; color: white; }
+    .recipients-table { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #f8f9fa; }
+    th { text-align: left; padding: 16px; font-weight: 600; color: #2c3e50; font-size: 14px; border-bottom: 2px solid #e9ecef; }
+    td { padding: 16px; border-bottom: 1px solid #e9ecef; }
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-sent { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-skipped { background: #d6d8db; color: #383d41; }
+    .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+    .pagination a { padding: 8px 16px; background: white; border: 1px solid #dfe6e9; border-radius: 6px; text-decoration: none; color: #2c3e50; }
+    .pagination a.active { background: #3498db; color: white; border-color: #3498db; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'campaign_detail' campaign.id %}" class="back-link">← Back to Campaign</a>
+
+<div class="page-header">
+    <h1>Recipients: {{ campaign.name }}</h1>
+</div>
+
+<div class="filters">
+    <div class="filter-group">
+        <label>Status</label>
+        <select onchange="window.location.href='?status=' + this.value + '&search={{ search_query }}'">
+            <option value="">All</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+            <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+            <option value="skipped" {% if status_filter == 'skipped' %}selected{% endif %}>Skipped</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Search</label>
+        <form method="get" style="display: flex; gap: 10px;">
+            <input type="text" name="search" placeholder="Email or district..." value="{{ search_query }}">
+            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+    </div>
+</div>
+
+<div class="recipients-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Congressional District</th>
+                <th>Status</th>
+                <th>Sent At</th>
+                <th>Version</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for recipient in recipients %}
+            <tr>
+                <td>{{ recipient.email }}</td>
+                <td>{{ recipient.district|default:"-" }}</td>
+                <td><span class="status-badge status-{{ recipient.status }}">{{ recipient.status_display }}</span></td>
+                <td>{{ recipient.sent_at|date:"M d, Y g:i A"|default:"-" }}</td>
+                <td>v{{ recipient.version|default:"N/A" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                    No recipients found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if total > per_page %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="?page={{ page|add:-1 }}&status={{ status_filter }}&search={{ search_query }}">Previous</a>
+    {% endif %}
+    <span>Page {{ page }} of {{ total|add:per_page|add:-1|floatformat:0|divide:per_page }}</span>
+    {% if page|multiply:per_page < total %}
+    <a href="?page={{ page|add:1 }}&status={{ status_filter }}&search={{ search_query }}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

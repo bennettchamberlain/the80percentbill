@@ -4,7 +4,16 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
-from .models import EmailUser, SMTPConfiguration, EmailTemplate, EmailCampaign, EmailLog
+from .models import (
+    EmailUser, SMTPConfiguration, EmailTemplate, EmailCampaign, EmailLog,
+    CampaignRecipient, CampaignVersion, Segment, ContactList, Contact
+)
+from .campaign_batch import start_campaign, pause_campaign, resume_campaign, cancel_campaign
+from .campaign_versioning import update_campaign_content, get_version_stats
+from .campaign_monitoring import (
+    get_campaign_summary, get_campaign_recipients, 
+    get_campaign_status_breakdown, get_campaign_progress_timeline
+)
 
 
 def can_access_email_management(user):
@@ -172,17 +181,271 @@ def templates(request):
 @user_passes_test(can_access_email_management, login_url='/email/login/')
 def campaigns(request):
     """
-    View and manage email campaigns.
+    Campaign list page - main entry point for campaign management.
     """
     user = request.user
     
-    campaigns = EmailCampaign.objects.filter(created_by=user).order_by('-created_at')
+    campaigns_list = EmailCampaign.objects.filter(created_by=user).order_by('-created_at')
+    
+    # Add computed metrics to each campaign
+    campaigns_with_metrics = []
+    for campaign in campaigns_list:
+        campaigns_with_metrics.append({
+            'campaign': campaign,
+            'total_recipients': campaign.total_recipients,
+            'sent_count': campaign.sent_count,
+            'progress_percentage': campaign.progress_percentage,
+        })
     
     context = {
-        'campaigns': campaigns,
+        'campaigns': campaigns_with_metrics,
     }
     
-    return render(request, 'email_management/campaigns.html', context)
+    return render(request, 'email_management/campaigns_list.html', context)
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def campaign_create(request):
+    """
+    Create new campaign - multi-step wizard.
+    """
+    user = request.user
+    
+    if request.method == 'POST':
+        # Handle campaign creation
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        template_id = request.POST.get('template_id')
+        segment_id = request.POST.get('segment_id')
+        contact_list_id = request.POST.get('contact_list_id')
+        daily_send_limit = request.POST.get('daily_send_limit', 1000)
+        batch_size = request.POST.get('batch_size', 50)
+        start_date = request.POST.get('start_date')
+        
+        # Validation
+        if not name or not template_id:
+            messages.error(request, 'Campaign name and template are required.')
+            return redirect('campaign_create')
+        
+        if not segment_id and not contact_list_id:
+            messages.error(request, 'You must select either a segment or contact list.')
+            return redirect('campaign_create')
+        
+        # Create campaign
+        campaign = EmailCampaign.objects.create(
+            name=name,
+            description=description,
+            template_id=template_id,
+            segment_id=segment_id if segment_id else None,
+            contact_list_id=contact_list_id if contact_list_id else None,
+            daily_send_limit=int(daily_send_limit),
+            batch_size=int(batch_size),
+            start_date=start_date if start_date else None,
+            status='draft',
+            created_by=user
+        )
+        
+        messages.success(request, f'Campaign "{name}" created successfully.')
+        return redirect('campaign_detail', campaign_id=campaign.id)
+    
+    # GET request - show wizard
+    templates = EmailTemplate.objects.filter(user=user)
+    segments = Segment.objects.filter(created_by=user)
+    contact_lists = ContactList.objects.filter(created_by=user)
+    
+    context = {
+        'templates': templates,
+        'segments': segments,
+        'contact_lists': contact_lists,
+    }
+    
+    return render(request, 'email_management/campaign_create.html', context)
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def campaign_detail(request, campaign_id):
+    """
+    Campaign overview page - central control for a campaign.
+    """
+    user = request.user
+    campaign = get_object_or_404(EmailCampaign, id=campaign_id, created_by=user)
+    
+    # Get comprehensive metrics
+    summary = get_campaign_summary(campaign_id)
+    
+    # Get version stats
+    version_stats = get_version_stats(campaign_id)
+    
+    context = {
+        'campaign': campaign,
+        'summary': summary,
+        'version_stats': version_stats,
+    }
+    
+    return render(request, 'email_management/campaign_detail.html', context)
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def campaign_recipients(request, campaign_id):
+    """
+    Campaign recipients page - view all recipients with filtering.
+    """
+    user = request.user
+    campaign = get_object_or_404(EmailCampaign, id=campaign_id, created_by=user)
+    
+    # Get filter params
+    status_filter = request.GET.get('status', None)
+    search_query = request.GET.get('search', '').strip()
+    page = int(request.GET.get('page', 1))
+    per_page = 50
+    offset = (page - 1) * per_page
+    
+    # Get recipients
+    recipients_data = get_campaign_recipients(
+        campaign_id=campaign_id,
+        status=status_filter,
+        limit=per_page,
+        offset=offset
+    )
+    
+    # Search if query provided
+    if search_query:
+        from .campaign_monitoring import search_recipients
+        recipients_data['recipients'] = search_recipients(
+            campaign_id=campaign_id,
+            query=search_query,
+            limit=per_page
+        )
+        recipients_data['total'] = len(recipients_data['recipients'])
+    
+    context = {
+        'campaign': campaign,
+        'recipients': recipients_data['recipients'],
+        'total': recipients_data['total'],
+        'page': page,
+        'per_page': per_page,
+        'status_filter': status_filter,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'email_management/campaign_recipients.html', context)
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def campaign_edit(request, campaign_id):
+    """
+    Campaign edit page - edit configuration and content.
+    """
+    user = request.user
+    campaign = get_object_or_404(EmailCampaign, id=campaign_id, created_by=user)
+    
+    if request.method == 'POST':
+        # Get form data
+        subject = request.POST.get('subject')
+        html_body = request.POST.get('html_body')
+        plain_body = request.POST.get('plain_body', '')
+        daily_send_limit = request.POST.get('daily_send_limit')
+        batch_size = request.POST.get('batch_size')
+        notes = request.POST.get('notes', '')
+        
+        # Update content (creates new version if already sending)
+        if subject or html_body:
+            update_campaign_content(
+                campaign_id=campaign_id,
+                subject=subject,
+                html_body=html_body,
+                plain_body=plain_body,
+                notes=notes,
+                user_id=user.id
+            )
+        
+        # Update sending configuration
+        if daily_send_limit:
+            campaign.daily_send_limit = int(daily_send_limit)
+        if batch_size:
+            campaign.batch_size = int(batch_size)
+        
+        campaign.save()
+        
+        messages.success(request, 'Campaign updated successfully.')
+        return redirect('campaign_detail', campaign_id=campaign_id)
+    
+    # GET request - show edit form
+    # Get latest version for editing
+    latest_version = campaign.versions.order_by('-created_at').first()
+    
+    templates = EmailTemplate.objects.filter(user=user)
+    
+    context = {
+        'campaign': campaign,
+        'latest_version': latest_version,
+        'templates': templates,
+        'has_sent': campaign.sent_count > 0,
+    }
+    
+    return render(request, 'email_management/campaign_edit.html', context)
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def campaign_analytics(request, campaign_id):
+    """
+    Campaign analytics page - performance metrics and charts.
+    """
+    user = request.user
+    campaign = get_object_or_404(EmailCampaign, id=campaign_id, created_by=user)
+    
+    # Get comprehensive metrics
+    summary = get_campaign_summary(campaign_id)
+    
+    # Get timeline data
+    timeline = get_campaign_progress_timeline(campaign_id)
+    
+    # Get status breakdown
+    breakdown = get_campaign_status_breakdown(campaign_id)
+    
+    context = {
+        'campaign': campaign,
+        'summary': summary,
+        'timeline': timeline,
+        'breakdown': breakdown,
+    }
+    
+    return render(request, 'email_management/campaign_analytics.html', context)
+
+
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def campaign_action(request, campaign_id, action):
+    """
+    Campaign action handler - start, pause, resume, cancel.
+    """
+    user = request.user
+    campaign = get_object_or_404(EmailCampaign, id=campaign_id, created_by=user)
+    
+    try:
+        if action == 'start':
+            result = start_campaign(campaign_id)
+            messages.success(request, f'Campaign started. {result["recipients_created"]} recipients resolved.')
+        elif action == 'pause':
+            pause_campaign(campaign_id)
+            messages.success(request, 'Campaign paused.')
+        elif action == 'resume':
+            resume_campaign(campaign_id)
+            messages.success(request, 'Campaign resumed.')
+        elif action == 'cancel':
+            cancel_campaign(campaign_id)
+            messages.warning(request, 'Campaign cancelled.')
+        else:
+            messages.error(request, f'Unknown action: {action}')
+    except Exception as e:
+        messages.error(request, f'Error: {str(e)}')
+    
+    return redirect('campaign_detail', campaign_id=campaign_id)
 
 
 @login_required(login_url='/email/login/')

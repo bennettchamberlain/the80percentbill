@@ -1,0 +1,563 @@
+{% extends 'email_management/base.html' %}
+
+{% block title %}Create Campaign - Email Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 32px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+    
+    .back-link {
+        color: #3498db;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .wizard-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 40px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .wizard-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 40px;
+        position: relative;
+    }
+    
+    .wizard-steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #e9ecef;
+        z-index: 0;
+    }
+    
+    .wizard-step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e9ecef;
+        color: #7f8c8d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin: 0 auto 10px;
+    }
+    
+    .wizard-step.active .step-number {
+        background: #3498db;
+        color: white;
+    }
+    
+    .wizard-step.completed .step-number {
+        background: #2ecc71;
+        color: white;
+    }
+    
+    .step-label {
+        font-size: 14px;
+        color: #7f8c8d;
+    }
+    
+    .wizard-step.active .step-label {
+        color: #2c3e50;
+        font-weight: 500;
+    }
+    
+    .step-content {
+        display: none;
+    }
+    
+    .step-content.active {
+        display: block;
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #dfe6e9;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+    }
+    
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    .form-group .hint {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin-top: 4px;
+    }
+    
+    .audience-type {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .audience-option {
+        flex: 1;
+        padding: 20px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    
+    .audience-option:hover {
+        border-color: #3498db;
+    }
+    
+    .audience-option.selected {
+        border-color: #3498db;
+        background: #ebf5fb;
+    }
+    
+    .audience-option input[type="radio"] {
+        display: none;
+    }
+    
+    .audience-option h3 {
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    
+    .audience-option p {
+        font-size: 13px;
+        color: #7f8c8d;
+    }
+    
+    .estimated-recipients {
+        background: #ebf5fb;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 20px;
+    }
+    
+    .estimated-recipients strong {
+        color: #3498db;
+        font-size: 18px;
+    }
+    
+    .review-section {
+        margin-bottom: 25px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .review-section:last-child {
+        border-bottom: none;
+    }
+    
+    .review-section h3 {
+        font-size: 18px;
+        margin-bottom: 15px;
+        color: #2c3e50;
+    }
+    
+    .review-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    
+    .review-label {
+        color: #7f8c8d;
+        font-weight: 500;
+    }
+    
+    .review-value {
+        color: #2c3e50;
+    }
+    
+    .wizard-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+    }
+    
+    .btn {
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #2980b9;
+    }
+    
+    .btn-secondary {
+        background: #ecf0f1;
+        color: #2c3e50;
+    }
+    
+    .btn-secondary:hover {
+        background: #bdc3c7;
+    }
+    
+    .btn-success {
+        background: #2ecc71;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #27ae60;
+    }
+    
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{% url 'email_campaigns' %}" class="back-link">← Back to Campaigns</a>
+    <h1>Create Campaign</h1>
+</div>
+
+<div class="wizard-container">
+    <div class="wizard-steps">
+        <div class="wizard-step active" data-step="1">
+            <div class="step-number">1</div>
+            <div class="step-label">Campaign Details</div>
+        </div>
+        <div class="wizard-step" data-step="2">
+            <div class="step-number">2</div>
+            <div class="step-label">Audience</div>
+        </div>
+        <div class="wizard-step" data-step="3">
+            <div class="step-number">3</div>
+            <div class="step-label">Send Strategy</div>
+        </div>
+        <div class="wizard-step" data-step="4">
+            <div class="step-number">4</div>
+            <div class="step-label">Review</div>
+        </div>
+    </div>
+    
+    <form method="post" id="campaignForm">
+        {% csrf_token %}
+        
+        <!-- Step 1: Campaign Details -->
+        <div class="step-content active" data-step="1">
+            <div class="form-group">
+                <label for="name">Campaign Name *</label>
+                <input type="text" id="name" name="name" required>
+                <div class="hint">Give your campaign a descriptive name</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description"></textarea>
+                <div class="hint">Optional: Describe the purpose of this campaign</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="template_id">Email Template *</label>
+                <select id="template_id" name="template_id" required>
+                    <option value="">Select a template...</option>
+                    {% for template in templates %}
+                    <option value="{{ template.id }}">{{ template.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <!-- Step 2: Audience Selection -->
+        <div class="step-content" data-step="2">
+            <div class="audience-type">
+                <label class="audience-option" for="audience_segment">
+                    <input type="radio" id="audience_segment" name="audience_type" value="segment">
+                    <h3>Segment</h3>
+                    <p>Dynamic filtering based on criteria</p>
+                </label>
+                
+                <label class="audience-option" for="audience_list">
+                    <input type="radio" id="audience_list" name="audience_type" value="list">
+                    <h3>Contact List</h3>
+                    <p>Static list of recipients</p>
+                </label>
+            </div>
+            
+            <div class="form-group" id="segment_selector" style="display:none;">
+                <label for="segment_id">Select Segment</label>
+                <select id="segment_id" name="segment_id">
+                    <option value="">Select a segment...</option>
+                    {% for segment in segments %}
+                    <option value="{{ segment.id }}">{{ segment.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group" id="list_selector" style="display:none;">
+                <label for="contact_list_id">Select Contact List</label>
+                <select id="contact_list_id" name="contact_list_id">
+                    <option value="">Select a contact list...</option>
+                    {% for list in contact_lists %}
+                    <option value="{{ list.id }}">{{ list.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="estimated-recipients" style="display:none;" id="estimated_count">
+                <strong>Estimated recipients: <span id="recipient_count">0</span></strong>
+            </div>
+        </div>
+        
+        <!-- Step 3: Send Strategy -->
+        <div class="step-content" data-step="3">
+            <div class="form-group">
+                <label for="daily_send_limit">Daily Send Limit</label>
+                <input type="number" id="daily_send_limit" name="daily_send_limit" value="1000" min="0">
+                <div class="hint">Maximum emails to send per day (0 = unlimited)</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="batch_size">Batch Size</label>
+                <input type="number" id="batch_size" name="batch_size" value="50" min="1">
+                <div class="hint">Number of emails to send per batch</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="start_date">Start Date (Optional)</label>
+                <input type="datetime-local" id="start_date" name="start_date">
+                <div class="hint">Leave empty to start immediately when launched</div>
+            </div>
+        </div>
+        
+        <!-- Step 4: Review -->
+        <div class="step-content" data-step="4">
+            <div class="review-section">
+                <h3>Campaign Details</h3>
+                <div class="review-item">
+                    <span class="review-label">Name:</span>
+                    <span class="review-value" id="review_name">-</span>
+                </div>
+                <div class="review-item">
+                    <span class="review-label">Template:</span>
+                    <span class="review-value" id="review_template">-</span>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3>Audience</h3>
+                <div class="review-item">
+                    <span class="review-label">Type:</span>
+                    <span class="review-value" id="review_audience_type">-</span>
+                </div>
+                <div class="review-item">
+                    <span class="review-label">Estimated Recipients:</span>
+                    <span class="review-value" id="review_recipients">-</span>
+                </div>
+            </div>
+            
+            <div class="review-section">
+                <h3>Send Strategy</h3>
+                <div class="review-item">
+                    <span class="review-label">Daily Send Limit:</span>
+                    <span class="review-value" id="review_limit">-</span>
+                </div>
+                <div class="review-item">
+                    <span class="review-label">Batch Size:</span>
+                    <span class="review-value" id="review_batch">-</span>
+                </div>
+                <div class="review-item">
+                    <span class="review-label">Start Date:</span>
+                    <span class="review-value" id="review_start">-</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="wizard-actions">
+            <button type="button" class="btn btn-secondary" id="prevBtn" style="display:none;">Previous</button>
+            <div></div>
+            <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+            <button type="submit" class="btn btn-success" id="submitBtn" style="display:none;">Launch Campaign</button>
+        </div>
+    </form>
+</div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 4;
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+    if (validateStep(currentStep)) {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            updateWizard();
+        }
+    }
+});
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+    if (currentStep > 1) {
+        currentStep--;
+        updateWizard();
+    }
+});
+
+// Audience type selection
+document.querySelectorAll('input[name="audience_type"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        document.querySelectorAll('.audience-option').forEach(opt => opt.classList.remove('selected'));
+        e.target.closest('.audience-option').classList.add('selected');
+        
+        if (e.target.value === 'segment') {
+            document.getElementById('segment_selector').style.display = 'block';
+            document.getElementById('list_selector').style.display = 'none';
+            document.getElementById('contact_list_id').value = '';
+        } else {
+            document.getElementById('segment_selector').style.display = 'none';
+            document.getElementById('list_selector').style.display = 'block';
+            document.getElementById('segment_id').value = '';
+        }
+        
+        document.getElementById('estimated_count').style.display = 'block';
+    });
+});
+
+function updateWizard() {
+    // Update step indicators
+    document.querySelectorAll('.wizard-step').forEach((step, index) => {
+        const stepNum = index + 1;
+        step.classList.remove('active', 'completed');
+        if (stepNum < currentStep) {
+            step.classList.add('completed');
+        } else if (stepNum === currentStep) {
+            step.classList.add('active');
+        }
+    });
+    
+    // Update step content
+    document.querySelectorAll('.step-content').forEach((content, index) => {
+        const stepNum = index + 1;
+        content.classList.toggle('active', stepNum === currentStep);
+    });
+    
+    // Update buttons
+    document.getElementById('prevBtn').style.display = currentStep === 1 ? 'none' : 'block';
+    document.getElementById('nextBtn').style.display = currentStep === totalSteps ? 'none' : 'block';
+    document.getElementById('submitBtn').style.display = currentStep === totalSteps ? 'block' : 'none';
+    
+    // Update review step
+    if (currentStep === 4) {
+        updateReview();
+    }
+}
+
+function validateStep(step) {
+    if (step === 1) {
+        const name = document.getElementById('name').value.trim();
+        const template = document.getElementById('template_id').value;
+        if (!name || !template) {
+            alert('Please fill in all required fields');
+            return false;
+        }
+    } else if (step === 2) {
+        const audienceType = document.querySelector('input[name="audience_type"]:checked');
+        if (!audienceType) {
+            alert('Please select an audience type');
+            return false;
+        }
+        const segment = document.getElementById('segment_id').value;
+        const list = document.getElementById('contact_list_id').value;
+        if (!segment && !list) {
+            alert('Please select a segment or contact list');
+            return false;
+        }
+    }
+    return true;
+}
+
+function updateReview() {
+    // Campaign details
+    document.getElementById('review_name').textContent = document.getElementById('name').value || '-';
+    const template = document.getElementById('template_id');
+    document.getElementById('review_template').textContent = 
+        template.options[template.selectedIndex]?.text || '-';
+    
+    // Audience
+    const audienceType = document.querySelector('input[name="audience_type"]:checked')?.value;
+    if (audienceType === 'segment') {
+        const segment = document.getElementById('segment_id');
+        document.getElementById('review_audience_type').textContent = 
+            'Segment: ' + (segment.options[segment.selectedIndex]?.text || '-');
+    } else if (audienceType === 'list') {
+        const list = document.getElementById('contact_list_id');
+        document.getElementById('review_audience_type').textContent = 
+            'Contact List: ' + (list.options[list.selectedIndex]?.text || '-');
+    } else {
+        document.getElementById('review_audience_type').textContent = '-';
+    }
+    document.getElementById('review_recipients').textContent = 
+        document.getElementById('recipient_count').textContent || '0';
+    
+    // Send strategy
+    const limit = document.getElementById('daily_send_limit').value;
+    document.getElementById('review_limit').textContent = 
+        limit === '0' ? 'Unlimited' : limit + ' per day';
+    document.getElementById('review_batch').textContent = 
+        document.getElementById('batch_size').value || '-';
+    const startDate = document.getElementById('start_date').value;
+    document.getElementById('review_start').textContent = 
+        startDate ? new Date(startDate).toLocaleString() : 'Immediately';
+}
+</script>
+{% endblock %}

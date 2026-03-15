@@ -1,0 +1,217 @@
+{% extends 'email_management/base.html' %}
+{% load humanize %}
+
+{% block title %}Campaigns - Email Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 32px;
+        font-weight: 600;
+    }
+    
+    .btn {
+        display: inline-block;
+        padding: 12px 24px;
+        background: #3498db;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: background 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn:hover {
+        background: #2980b9;
+    }
+    
+    .btn-primary {
+        background: #3498db;
+    }
+    
+    .btn-primary:hover {
+        background: #2980b9;
+    }
+    
+    .campaigns-table {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    thead {
+        background: #f8f9fa;
+    }
+    
+    th {
+        text-align: left;
+        padding: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 14px;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    td {
+        padding: 16px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    tbody tr {
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    tbody tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .status-draft {
+        background: #ecf0f1;
+        color: #7f8c8d;
+    }
+    
+    .status-scheduled {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-sending {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .status-paused {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .status-completed {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-cancelled {
+        background: #d6d8db;
+        color: #383d41;
+    }
+    
+    .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background: #3498db;
+        transition: width 0.3s;
+    }
+    
+    .progress-text {
+        font-size: 12px;
+        color: #7f8c8d;
+        margin-top: 4px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #7f8c8d;
+    }
+    
+    .empty-state h2 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    
+    .empty-state p {
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Campaigns</h1>
+    <a href="{% url 'campaign_create' %}" class="btn btn-primary">Create Campaign</a>
+</div>
+
+{% if campaigns %}
+<div class="campaigns-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Campaign Name</th>
+                <th>Status</th>
+                <th>Audience Size</th>
+                <th>Emails Sent</th>
+                <th>Progress</th>
+                <th>Created Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in campaigns %}
+            <tr onclick="window.location.href='{% url 'campaign_detail' item.campaign.id %}'">
+                <td>
+                    <strong>{{ item.campaign.name }}</strong>
+                    {% if item.campaign.description %}
+                    <div style="font-size: 13px; color: #7f8c8d; margin-top: 4px;">
+                        {{ item.campaign.description|truncatewords:15 }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-badge status-{{ item.campaign.status }}">
+                        {{ item.campaign.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ item.total_recipients|default:"0"|intcomma }}</td>
+                <td>{{ item.sent_count|default:"0"|intcomma }}</td>
+                <td>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: {{ item.progress_percentage }}%"></div>
+                    </div>
+                    <div class="progress-text">{{ item.progress_percentage|floatformat:1 }}%</div>
+                </td>
+                <td>{{ item.campaign.created_at|date:"M d, Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="campaigns-table">
+    <div class="empty-state">
+        <h2>No campaigns yet</h2>
+        <p>Create your first campaign to start sending emails.</p>
+        <a href="{% url 'campaign_create' %}" class="btn btn-primary">Create Campaign</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
