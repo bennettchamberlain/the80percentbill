@@ -14,5 +14,67 @@
     </a>
     <p></p>
     <a href="/bill/" class="action-btn outline" style="display: inline-block;">📖 Read the Bill</a>
+
+    <hr>
+
+    <h3>Help Grow the Movement</h3>
+    <p class="form-hint">Share that you signed — every new signer counts.</p>
+
+    <div class="share-buttons">
+        <a id="share-twitter" href="#" target="_blank" rel="noopener noreferrer" class="share-btn share-btn-x">
+            𝕏 Post on X
+        </a>
+        <a id="share-facebook" href="#" target="_blank" rel="noopener noreferrer" class="share-btn share-btn-facebook">
+            f Share on Facebook
+        </a>
+        <button type="button" id="copy-link-btn" class="share-btn share-btn-copy" onclick="copyPledgeLink()">
+            🔗 Copy Link
+        </button>
+    </div>
+    <p id="copy-confirm" class="copy-confirm-msg" style="display:none;">✓ Link copied to clipboard!</p>
+
+    <hr>
+
+    <p class="form-hint">Know someone who should sign? Send them here.</p>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="another">
+        <button type="submit" class="btn btn-secondary">← Invite a Friend to Sign</button>
+    </form>
 </div>
+
+<script>
+(function() {
+    var siteUrl = window.location.origin + '/';
+    var shareText = 'I just signed the pledge for The 80% Bill \u2014 bipartisan bills that 80%+ of Americans support. Add your name: ';
+
+    document.getElementById('share-twitter').href =
+        'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText + siteUrl);
+
+    document.getElementById('share-facebook').href =
+        'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(siteUrl);
+})();
+
+function copyPledgeLink() {
+    var siteUrl = window.location.origin + '/';
+    var confirm = document.getElementById('copy-confirm');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(siteUrl).then(function() {
+            confirm.style.display = 'block';
+            setTimeout(function() { confirm.style.display = 'none'; }, 3000);
+        });
+    } else {
+        var el = document.createElement('textarea');
+        el.value = siteUrl;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        confirm.style.display = 'block';
+        setTimeout(function() { confirm.style.display = 'none'; }, 3000);
+    }
+}
+</script>
 {% endblock %}

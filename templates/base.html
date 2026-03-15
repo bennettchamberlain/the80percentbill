@@ -27,9 +27,17 @@
             <div class="sidebar-content">
                 <a href="/"><img src="{% static 'logo.png' %}" alt="The 80% Bill" class="sidebar-logo"></a>
                 <hr class="sidebar-divider">
-                <a href="{% url 'data:index' %}" class="sidebar-btn">
-                    📊 View anonymized data by district
+                <a href="/" class="sidebar-btn {% if request.path == '/' %}sidebar-btn-active{% endif %}">
+                    ✍️ Sign the Pledge
                 </a>
+                <a href="/bill/" class="sidebar-btn {% if request.path == '/bill/' %}sidebar-btn-active{% endif %}">
+                    📖 Read the Bill
+                </a>
+                <a href="{% url 'data:index' %}" class="sidebar-btn {% if request.path == '/data/' %}sidebar-btn-active{% endif %}">
+                    📊 View data by district
+                </a>
+                <hr class="sidebar-divider">
+                <h3 class="sidebar-heading">Support the Project</h3>
             </div>
         </aside>
         <main class="main-content {% block main_content_class %}{% endblock %}">

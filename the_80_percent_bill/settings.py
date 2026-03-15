@@ -64,7 +64,6 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "core",
-    "home",
     "bill",
     "pledge",
     "data",
