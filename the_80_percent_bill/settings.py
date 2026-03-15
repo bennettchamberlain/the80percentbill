@@ -40,6 +40,7 @@ ALLOWED_HOSTS = [
     ".the80percentbill.com",
     ".railway.app",
     ".up.railway.app",
+    "bennett-linux-desktop.capybara-ulmer.ts.net",
 ]
 if extra_hosts := os.environ.get("ALLOWED_HOSTS"):
     ALLOWED_HOSTS.extend(h.strip() for h in extra_hosts.split(",") if h.strip())
@@ -66,13 +67,18 @@ INSTALLED_APPS = [
     "bill",
     "pledge",
     "data",
+    "email_management",
     "django.contrib.admin",
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
 ]
+
+# Custom user model for email management
+AUTH_USER_MODEL = 'email_management.EmailUser'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

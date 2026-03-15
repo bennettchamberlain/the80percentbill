@@ -1,0 +1,87 @@
+{% extends 'email_management/base.html' %}
+
+{% block title %}Edit - {{ campaign.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .back-link { color: #3498db; text-decoration: none; font-size: 14px; margin-bottom: 10px; display: inline-block; }
+    .page-header { margin-bottom: 30px; }
+    .page-header h1 { font-size: 32px; font-weight: 600; }
+    .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 6px; }
+    .warning-box strong { color: #856404; }
+    .edit-form { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 800px; }
+    .form-group { margin-bottom: 25px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #2c3e50; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 14px; font-family: inherit; }
+    .form-group textarea { min-height: 200px; resize: vertical; font-family: monospace; }
+    .form-group .hint { font-size: 13px; color: #7f8c8d; margin-top: 4px; }
+    .btn { padding: 12px 24px; border-radius: 6px; font-weight: 500; text-decoration: none; border: none; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #3498db; color: white; }
+    .btn-secondary { background: #ecf0f1; color: #2c3e50; margin-left: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'campaign_detail' campaign.id %}" class="back-link">← Back to Campaign</a>
+
+<div class="page-header">
+    <h1>Edit: {{ campaign.name }}</h1>
+</div>
+
+{% if has_sent %}
+<div class="warning-box">
+    <strong>⚠️ Campaign Has Started Sending</strong><br>
+    Changes will only apply to recipients who have not yet received the campaign. A new version will be created.
+</div>
+{% endif %}
+
+<div class="edit-form">
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="template_id">Template</label>
+            <select id="template_id" name="template_id">
+                {% for template in templates %}
+                <option value="{{ template.id }}" {% if template.id == campaign.template.id %}selected{% endif %}>
+                    {{ template.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="hint">Change the template used for this campaign</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" value="{{ latest_version.subject|default:'' }}">
+            <div class="hint">Leave empty to use template subject</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="html_body">HTML Body</label>
+            <textarea id="html_body" name="html_body">{{ latest_version.html_body|default:'' }}</textarea>
+            <div class="hint">Leave empty to use template body</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="daily_send_limit">Daily Send Limit</label>
+            <input type="number" id="daily_send_limit" name="daily_send_limit" value="{{ campaign.daily_send_limit }}" min="0">
+            <div class="hint">0 = unlimited</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="batch_size">Batch Size</label>
+            <input type="number" id="batch_size" name="batch_size" value="{{ campaign.batch_size }}" min="1">
+        </div>
+        
+        <div class="form-group">
+            <label for="notes">Version Notes</label>
+            <textarea id="notes" name="notes" style="min-height: 80px;"></textarea>
+            <div class="hint">Optional: Describe what changed in this version</div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'campaign_detail' campaign.id %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

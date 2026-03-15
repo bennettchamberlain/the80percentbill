@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Email Management{% endblock %} - The 80% Bill</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        .header nav a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .header nav a.active {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-toggle {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 18px;
+        }
+        
+        .dropdown-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 5px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+            z-index: 1000;
+            padding: 8px 0;
+        }
+        
+        .dropdown.active .dropdown-menu {
+            display: block;
+        }
+        
+        .dropdown-menu a {
+            display: block;
+            padding: 12px 20px;
+            color: #000 !important;
+            text-decoration: none;
+            transition: background 0.2s;
+            margin: 4px 8px;
+            font-weight: 500;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        
+        .dropdown-menu a:hover {
+            background: #f8f9fa !important;
+            color: #000 !important;
+        }
+        
+        .dropdown-menu a:first-child {
+            margin-top: 0;
+        }
+        
+        .dropdown-menu a:last-child {
+            margin-bottom: 0;
+        }
+        
+        .messages {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <div class="header">
+        <div class="container">
+            <h1>📧 Email Management</h1>
+            <nav>
+                <a href="{% url 'email_dashboard' %}" {% if request.resolver_match.url_name == 'email_dashboard' %}class="active"{% endif %}>Dashboard</a>
+                <a href="{% url 'email_test' %}" {% if request.resolver_match.url_name == 'email_test' %}class="active"{% endif %}>Send Test</a>
+                <a href="{% url 'email_templates' %}" {% if request.resolver_match.url_name == 'email_templates' %}class="active"{% endif %}>Templates</a>
+                <a href="{% url 'email_campaigns' %}" {% if request.resolver_match.url_name == 'email_campaigns' %}class="active"{% endif %}>Campaigns</a>
+                <a href="{% url 'email_logs' %}" {% if request.resolver_match.url_name == 'email_logs' or request.resolver_match.url_name == 'email_history' %}class="active"{% endif %}>History</a>
+                
+                <div class="dropdown" id="settings-dropdown">
+                    <a class="dropdown-toggle" onclick="toggleDropdown(event)">⚙️</a>
+                    <div class="dropdown-menu">
+                        <a href="{% url 'email_smtp_configs' %}">SMTP Configuration</a>
+                        <a href="{% url 'email_logout' %}">Logout ({{ user.email }})</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="container">
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="message {{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        function toggleDropdown(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropdown = document.getElementById('settings-dropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('settings-dropdown');
+            if (dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

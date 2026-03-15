@@ -20,6 +20,7 @@ from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("email/", include("email_management.urls")),
     path("", include("pledge.urls")),
     path("pledge/", RedirectView.as_view(url="/", permanent=False)),
     path("bill/", include("bill.urls")),
