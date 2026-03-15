@@ -46,10 +46,24 @@ with connection.cursor() as cursor:
             print(f"  Already exists: {app}.{name}")
 
 print("✅ All migrations marked as applied")
+PYTHON_SCRIPT
 
-# Add contact_id column to pledge table if it doesn't exist
-print("\n🔧 Adding contact_id column to pledge table...")
+# Step 2: Create the actual tables FIRST (migrations won't run since they're marked as applied)
+echo "Step 2: Creating email_management tables..."
+python manage.py migrate email_management --run-syncdb 2>&1 || echo "Tables may already exist, continuing..."
+
+# Step 2.5: NOW add contact_id column (after email_contacts table exists)
+echo "Step 2.5: Adding contact_id column to pledge table..."
+python << 'PYTHON_SCRIPT2'
+import os
+import django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'the_80_percent_bill.settings')
+django.setup()
+
+from django.db import connection
+
 with connection.cursor() as cursor:
+    # Check if contact_id column exists
     cursor.execute("""
         SELECT column_name 
         FROM information_schema.columns 
@@ -70,11 +84,7 @@ with connection.cursor() as cursor:
             ON pledge_pledge(contact_id)
         """)
         print("  ✅ contact_id column added with index")
-PYTHON_SCRIPT
-
-# Step 2: Create the actual tables (migrations won't run since they're marked as applied)
-echo "Step 2: Creating email_management tables..."
-python manage.py migrate email_management --run-syncdb 2>&1 || echo "Tables may already exist, continuing..."
+PYTHON_SCRIPT2
 
 # Step 3: Apply all other migrations normally
 echo "Step 3: Applying remaining migrations..."
