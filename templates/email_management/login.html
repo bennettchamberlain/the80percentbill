@@ -1,0 +1,140 @@
+{% extends 'email_management/base.html' %}
+
+{% block title %}Login - Email Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        max-width: 450px;
+        margin: 100px auto;
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .login-header h2 {
+        font-size: 28px;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    
+    .login-header p {
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+    
+    .form-group input:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+    
+    .btn-primary {
+        width: 100%;
+        padding: 12px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .btn-primary:hover {
+        background: #2980b9;
+    }
+    
+    .login-footer {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 13px;
+        color: #7f8c8d;
+    }
+    
+    .login-footer a {
+        color: #3498db;
+        text-decoration: none;
+    }
+    
+    .login-footer a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-header">
+        <h2>📧 Email Management</h2>
+        <p>Sign in to access the email management system</p>
+    </div>
+    
+    <form method="post" action="{% url 'email_login' %}">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                required 
+                autofocus
+                placeholder="your.email@example.com"
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                required
+                placeholder="Enter your password"
+            >
+        </div>
+        
+        <button type="submit" class="btn-primary">
+            Sign In
+        </button>
+    </form>
+    
+    <div class="login-footer">
+        <p>
+            Access is restricted to authorized users only.<br>
+            Contact a superadmin to request access.
+        </p>
+        <p style="margin-top: 15px;">
+            <a href="/">← Back to The 80% Bill</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
