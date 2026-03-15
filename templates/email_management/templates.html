@@ -332,26 +332,21 @@
     <h2 style="margin-bottom: 20px;">Upload Templates</h2>
     
     <div class="info-box">
-        <p><strong>Template Format Instructions:</strong></p>
+        <p><strong>Template Format:</strong></p>
         
-        <p style="margin: 15px 0 5px 0;"><strong>1. Metadata (HTML Comments at Top):</strong></p>
-        <ul style="margin: 5px 0 15px 20px; line-height: 1.8;">
-            <li><code>&lt;!-- SUBJECT: Your email subject --&gt;</code> <strong>(required)</strong></li>
-            <li><code>&lt;!-- NAME: Template name --&gt;</code> (optional, defaults to filename)</li>
-            <li><code>&lt;!-- DESCRIPTION: What this template is for --&gt;</code> (optional)</li>
-        </ul>
+        <div style="margin: 10px 0; line-height: 1.4;">
+            <strong>Metadata Block (top of file):</strong>
+            <pre style="background: white; padding: 10px; border-radius: 4px; margin: 8px 0; font-size: 13px;"><!--
+SUBJECT: Your email subject line here
+NAME: Template Name (optional)
+DESCRIPTION: What this template is for (optional)
+--></pre>
+        </div>
         
-        <p style="margin: 15px 0 5px 0;"><strong>2. Variables (Dynamic Content):</strong></p>
-        <ul style="margin: 5px 0 15px 20px; line-height: 1.8;">
-            <li>Use double curly braces: <code>{{variable_name}}</code></li>
-            <li>Variables are auto-detected when you upload</li>
-            <li>Common variables: <code>{{first_name}}</code>, <code>{{district}}</code>, <code>{{representative}}</code></li>
-            <li>Use in subject line or HTML body</li>
-        </ul>
-        
-        <p style="margin: 15px 0 5px 0; color: #7f8c8d; font-size: 14px;">
-            <strong>Note:</strong> All metadata must be in a single HTML comment block at the very top of the file, before the <code>&lt;html&gt;</code> tag.
-        </p>
+        <div style="margin: 10px 0; line-height: 1.4;">
+            <strong>Variables:</strong> Use <code>{% verbatim %}{{variable_name}}{% endverbatim %}</code> syntax for dynamic content.
+            <br><span style="color: #7f8c8d; font-size: 13px;">Examples: {% verbatim %}<code>{{first_name}}</code>, <code>{{district}}</code>, <code>{{representative}}</code>{% endverbatim %}</span>
+        </div>
     </div>
     
     <form method="post" enctype="multipart/form-data" id="upload-form">
