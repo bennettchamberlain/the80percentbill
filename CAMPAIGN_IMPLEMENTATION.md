@@ -111,6 +111,92 @@ CREATE INDEX ON contact_list_members(list_id);
 
 ---
 
+## Phase 3: Segmentation System ✅ COMPLETE
+
+### What Was Implemented
+
+**1. Segments Table**
+```python
+Segment
+├── name
+├── description
+├── definition (JSONB)
+├── created_by
+└── created_at
+```
+
+**2. Definition Schema**
+```json
+{
+    "conditions": [
+        {
+            "field": "congressional_district",
+            "operator": "=",
+            "value": "CA-30"
+        },
+        {
+            "field": "representative",
+            "operator": "contains",
+            "value": "Friedman"
+        }
+    ],
+    "match": "all"
+}
+```
+
+**3. Congressional District as First-Class Attribute**
+- Special `congressional_district` field name
+- Sourced from `contact.district` or `pledge.district`
+- Enables district-specific campaign targeting
+- Example: "CA-12", "NY-14", "TX-7"
+
+**4. Segment Resolver**
+```python
+from email_management.segment_resolver import resolve_segment
+
+recipients = resolve_segment(segment_id)
+# Or via model:
+segment.resolve()
+```
+
+**Resolution logic**:
+1. Load segment definition
+2. Filter contacts by conditions
+3. Filter pledges (without linked contacts)
+4. Deduplicate by email address
+5. Return Recipient instances
+
+**5. Supported Operators**
+- `=`, `!=` - Equality (case-insensitive)
+- `contains` - Substring match
+- `in`, `not in` - List membership
+- `>`, `<`, `>=`, `<=` - Numeric comparison
+
+**6. Supported Fields**
+- `congressional_district` - Primary segmentation field
+- `representative` - From pledge.rep
+- `state` - From contact.state
+- `is_subscribed` - From contact
+- `source` - From contact
+- Custom fields from metadata
+
+**7. Match Modes**
+- `all` (AND) - All conditions must match
+- `any` (OR) - At least one condition matches
+
+**Files**: 
+- `email_management/models.py` - Segment model
+- `email_management/segment_resolver.py` - Resolution engine
+- `docs/SEGMENTS.md` - Complete documentation
+
+**Testing**:
+- ✅ Single condition (CA-30) resolves correctly
+- ✅ Multi-condition (district + rep) works
+- ✅ Deduplication by email prevents duplicates
+- ✅ Case-insensitive matching works
+
+---
+
 ## Next Phases (NOT YET IMPLEMENTED)
 
 ### Phase 3: Campaign Core Tables
