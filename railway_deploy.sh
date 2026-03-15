@@ -16,6 +16,7 @@ from django.db import connection
 from datetime import datetime
 
 migrations_to_fake = [
+    ('pledge', '0003_pledge_contact_pledge_pledge_pled_contact_dba015_idx'),
     ('email_management', '0001_initial'),
     ('email_management', '0002_senderemail'),
     ('email_management', '0003_remove_contactlist_contacts_and_more'),
@@ -44,7 +45,31 @@ with connection.cursor() as cursor:
         else:
             print(f"  Already exists: {app}.{name}")
 
-print("✅ Email management migrations marked as applied")
+print("✅ All migrations marked as applied")
+
+# Add contact_id column to pledge table if it doesn't exist
+print("\n🔧 Adding contact_id column to pledge table...")
+with connection.cursor() as cursor:
+    cursor.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'pledge_pledge' 
+        AND column_name = 'contact_id'
+    """)
+    if cursor.fetchone():
+        print("  contact_id column already exists")
+    else:
+        print("  Adding contact_id column...")
+        cursor.execute("""
+            ALTER TABLE pledge_pledge 
+            ADD COLUMN contact_id INTEGER NULL 
+            REFERENCES email_contacts(id) ON DELETE SET NULL
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS pledge_pled_contact_dba015_idx 
+            ON pledge_pledge(contact_id)
+        """)
+        print("  ✅ contact_id column added with index")
 PYTHON_SCRIPT
 
 # Step 2: Create the actual tables (migrations won't run since they're marked as applied)
