@@ -532,3 +532,78 @@ class SenderEmail(models.Model):
         status = "✓" if self.is_verified else "⚠"
         return f"{status} {self.email} ({self.display_name})"
 
+
+
+class Segment(models.Model):
+    """
+    Reusable audience segments based on recipient attributes.
+    
+    Segments define filter rules that resolve to a set of recipients.
+    This enables targeted campaign messaging based on attributes like
+    congressional district, representative, or engagement metrics.
+    
+    The definition field contains filter rules in JSONB format:
+    {
+        "conditions": [
+            {
+                "field": "congressional_district",
+                "operator": "=",
+                "value": "CA-12"
+            },
+            {
+                "field": "representative",
+                "operator": "contains",
+                "value": "Pelosi"
+            }
+        ],
+        "match": "all"  # or "any"
+    }
+    
+    Supported fields:
+    - congressional_district (from contact.district or pledge.district)
+    - representative (from pledge.rep or contact metadata)
+    - state (from contact.state)
+    - is_subscribed (from contact.is_subscribed)
+    - source (from contact.source)
+    - Any field in contact.custom_data or pledge metadata
+    
+    Supported operators:
+    - = (equals)
+    - != (not equals)
+    - contains (substring match)
+    - in (value in list)
+    - > < >= <= (numeric/date comparison)
+    """
+    name = models.CharField(max_length=255, verbose_name='Segment Name')
+    description = models.TextField(blank=True, verbose_name='Description')
+    definition = models.JSONField(
+        default=dict,
+        verbose_name='Filter Definition',
+        help_text='JSON filter rules for segment matching'
+    )
+    created_by = models.ForeignKey(
+        EmailUser,
+        on_delete=models.CASCADE,
+        related_name='created_segments',
+        verbose_name='Created By'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'segments'
+        verbose_name = 'Segment'
+        verbose_name_plural = 'Segments'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return self.name
+    
+    def resolve(self):
+        """
+        Resolve this segment to a set of recipients.
+        
+        Returns:
+            list: List of Recipient instances matching the segment filters
+        """
+        from .segment_resolver import resolve_segment
+        return resolve_segment(self.id)
