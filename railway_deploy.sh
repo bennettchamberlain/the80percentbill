@@ -46,11 +46,46 @@ with connection.cursor() as cursor:
             print(f"  Already exists: {app}.{name}")
 
 print("✅ All migrations marked as applied")
-PYTHON_SCRIPT
 
-# Step 2: Create the actual tables FIRST (migrations won't run since they're marked as applied)
-echo "Step 2: Creating email_management tables..."
-python manage.py migrate email_management --run-syncdb 2>&1 || echo "Tables may already exist, continuing..."
+# Create email_management tables using schema editor
+print("\n📦 Creating email_management tables directly...")
+from django.db import connection
+from django.db.backends.base.schema import BaseDatabaseSchemaEditor
+
+# Import all models
+from email_management.models import (
+    EmailUser, SMTPConfiguration, EmailTemplate, EmailLog,
+    Contact, ContactList, ContactListMember, Segment,
+    EmailCampaign, CampaignRecipient, CampaignVersion, SenderEmail
+)
+
+with connection.schema_editor() as schema_editor:
+    models_to_create = [
+        EmailUser, SenderEmail, SMTPConfiguration, Contact, 
+        ContactList, ContactListMember, Segment, EmailTemplate,
+        EmailCampaign, CampaignRecipient, CampaignVersion, EmailLog
+    ]
+    
+    for model in models_to_create:
+        table_name = model._meta.db_table
+        # Check if table exists
+        with connection.cursor() as cursor:
+            cursor.execute(f"""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = '{table_name}'
+                );
+            """)
+            exists = cursor.fetchone()[0]
+        
+        if not exists:
+            print(f"  Creating table: {table_name}")
+            schema_editor.create_model(model)
+        else:
+            print(f"  Table exists: {table_name}")
+
+print("✅ All email_management tables created")
+PYTHON_SCRIPT
 
 # Step 2.5: NOW add contact_id column (after email_contacts table exists)
 echo "Step 2.5: Adding contact_id column to pledge table..."
