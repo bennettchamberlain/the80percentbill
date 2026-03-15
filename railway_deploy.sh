@@ -112,7 +112,7 @@ with connection.cursor() as cursor:
         cursor.execute("""
             ALTER TABLE pledge_pledge 
             ADD COLUMN contact_id INTEGER NULL 
-            REFERENCES email_contacts(id) ON DELETE SET NULL
+            REFERENCES email_management_contact(id) ON DELETE SET NULL
         """)
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS pledge_pled_contact_dba015_idx 
