@@ -183,6 +183,144 @@
         padding: 40px;
         color: #7f8c8d;
     }
+    
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal.active {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: white;
+        width: 90%;
+        max-width: 1200px;
+        height: 85vh;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        position: relative;
+    }
+    
+    .modal-header {
+        padding: 20px 30px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+    
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #95a5a6;
+        line-height: 1;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+    }
+    
+    .close-btn:hover {
+        color: #e74c3c;
+    }
+    
+    .modal-body {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+    }
+    
+    .modal-footer {
+        padding: 20px 30px;
+        border-top: 1px solid #ddd;
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+    }
+    
+    .code-editor {
+        width: 100%;
+        height: 100%;
+        min-height: 400px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        resize: vertical;
+        line-height: 1.5;
+    }
+    
+    .editor-section {
+        margin-bottom: 20px;
+    }
+    
+    .editor-section label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #2c3e50;
+    }
+    
+    .editor-section input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .preview-modal {
+        z-index: 1100;
+    }
+    
+    .preview-content {
+        background: white;
+        width: 90%;
+        max-width: 1200px;
+        height: 85vh;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    }
+    
+    .preview-frame {
+        flex: 1;
+        border: none;
+        width: 100%;
+        background: white;
+    }
+    
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #7f8c8d;
+    }
 </style>
 {% endblock %}
 
@@ -260,11 +398,12 @@ DESCRIPTION: Sent to new pledge signers (optional)
                     {% endif %}
                 </div>
                 <div>
-                    <a href="/admin/email_management/emailtemplate/{{ template.id }}/change/" 
-                       class="btn btn-primary" 
-                       style="padding: 8px 20px; text-decoration: none; display: inline-block;">
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            style="padding: 8px 20px; text-decoration: none; display: inline-block;"
+                            onclick="openEditor({{ template.id }}, '{{ template.name|escapejs }}', '{{ template.subject|escapejs }}', `{{ template.body_html|escapejs }}`)">
                         ✏️ Edit
-                    </a>
+                    </button>
                 </div>
             </div>
             
@@ -294,6 +433,56 @@ DESCRIPTION: Sent to new pledge signers (optional)
             <p>Upload some HTML files above to get started!</p>
         </div>
     {% endif %}
+</div>
+
+<!-- Edit Modal -->
+<div class="modal" id="edit-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">Edit Template</h2>
+            <button class="close-btn" onclick="closeEditor()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="edit-form">
+                {% csrf_token %}
+                <input type="hidden" id="template-id" name="template_id">
+                
+                <div class="editor-section">
+                    <label for="template-name">Template Name</label>
+                    <input type="text" id="template-name" name="name" required>
+                </div>
+                
+                <div class="editor-section">
+                    <label for="template-subject">Subject Line</label>
+                    <input type="text" id="template-subject" name="subject" required>
+                </div>
+                
+                <div class="editor-section">
+                    <label for="template-html">HTML Content</label>
+                    <textarea id="template-html" name="body_html" class="code-editor" required></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="previewTemplate()">
+                👁️ Preview
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveTemplate()">
+                💾 Save Template
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal preview-modal" id="preview-modal">
+    <div class="preview-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Preview</h2>
+            <button class="close-btn" onclick="closePreview()">&times;</button>
+        </div>
+        <iframe id="preview-frame" class="preview-frame"></iframe>
+    </div>
 </div>
 
 {% verbatim %}
@@ -351,6 +540,95 @@ function formatFileSize(bytes) {
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
+
+// Template editor functions
+function openEditor(templateId, name, subject, bodyHtml) {
+    document.getElementById('template-id').value = templateId;
+    document.getElementById('template-name').value = name;
+    document.getElementById('template-subject').value = subject;
+    document.getElementById('template-html').value = bodyHtml;
+    document.getElementById('modal-title').textContent = 'Edit Template: ' + name;
+    document.getElementById('edit-modal').classList.add('active');
+}
+
+function closeEditor() {
+    document.getElementById('edit-modal').classList.remove('active');
+}
+
+function previewTemplate() {
+    const html = document.getElementById('template-html').value;
+    const previewFrame = document.getElementById('preview-frame');
+    const previewModal = document.getElementById('preview-modal');
+    
+    // Write HTML to iframe
+    const iframeDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+    
+    // Show preview modal
+    previewModal.classList.add('active');
+}
+
+function closePreview() {
+    document.getElementById('preview-modal').classList.remove('active');
+}
+
+function saveTemplate() {
+    const templateId = document.getElementById('template-id').value;
+    const name = document.getElementById('template-name').value;
+    const subject = document.getElementById('template-subject').value;
+    const bodyHtml = document.getElementById('template-html').value;
+    
+    if (!name || !subject || !bodyHtml) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Send update request
+    fetch('/email/templates/update/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            template_id: templateId,
+            name: name,
+            subject: subject,
+            body_html: bodyHtml
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Template saved successfully!');
+            closeEditor();
+            location.reload(); // Reload to show updated template
+        } else {
+            alert('❌ Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('❌ Error saving template: ' + error);
+    });
+}
+
+// Close modals on background click
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditor();
+    }
+});
+
+document.getElementById('preview-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePreview();
+    }
+});
 </script>
 {% endverbatim %}
 {% endblock %}

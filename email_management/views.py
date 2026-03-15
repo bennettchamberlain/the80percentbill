@@ -244,6 +244,54 @@ def templates(request):
     return render(request, 'email_management/templates.html', context)
 
 
+@login_required(login_url='/email/login/')
+@user_passes_test(can_access_email_management, login_url='/email/login/')
+def template_update(request):
+    """
+    Update an email template via AJAX.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'})
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        
+        template_id = data.get('template_id')
+        name = data.get('name')
+        subject = data.get('subject')
+        body_html = data.get('body_html')
+        
+        if not all([template_id, name, subject, body_html]):
+            return JsonResponse({'success': False, 'error': 'Missing required fields'})
+        
+        # Get template
+        template = EmailTemplate.objects.get(id=template_id)
+        
+        # Update fields
+        template.name = name
+        template.subject = subject
+        template.body_html = body_html
+        
+        # Regenerate plain text
+        from django.utils.html import strip_tags
+        template.body_text = strip_tags(body_html)
+        
+        # Re-detect variables
+        import re
+        variables = re.findall(r'\{\{(\w+)\}\}', body_html)
+        template.available_variables = {var: f'Variable: {var}' for var in set(variables)}
+        
+        template.save()
+        
+        return JsonResponse({'success': True})
+        
+    except EmailTemplate.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Template not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
 def parse_template_metadata(html_content):
     """
     Parse metadata from HTML comments at the top of the file.

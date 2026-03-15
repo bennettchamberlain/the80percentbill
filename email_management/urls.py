@@ -15,7 +15,8 @@ urlpatterns = [
     
     # Management pages
     path('smtp/', views.smtp_configs, name='email_smtp_configs'),
-    path('templates/', views.templates, name='email_templates'),  # Redirects to admin
+    path('templates/', views.templates, name='email_templates'),
+    path('templates/update/', views.template_update, name='template_update'),
     
     # Campaign pages
     path('campaigns/', views.campaigns, name='email_campaigns'),
