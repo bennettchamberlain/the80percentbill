@@ -671,7 +671,6 @@ def test_email(request):
 
 # Import models at the top
 from django.db import models
-from .template_loader import EmailTemplateLoader
 from .email_service import EmailSendingService
 from pledge.models import Pledge
 
