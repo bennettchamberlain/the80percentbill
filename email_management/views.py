@@ -165,11 +165,117 @@ def smtp_configs(request):
 @user_passes_test(can_access_email_management, login_url='/email/login/')
 def templates(request):
     """
-    View and manage email templates from database.
-    Now uses EmailTemplate model instead of filesystem.
+    Upload and manage email templates.
+    Upload HTML files with metadata in HTML comments.
     """
-    # Redirect to Django admin for template management
-    return redirect('/admin/email_management/emailtemplate/')
+    if request.method == 'POST':
+        files = request.FILES.getlist('template_files')
+        
+        if not files:
+            messages.error(request, 'No files uploaded.')
+            return redirect('email_templates')
+        
+        imported_count = 0
+        errors = []
+        
+        for file in files:
+            if not file.name.endswith('.html'):
+                errors.append(f'{file.name}: Not an HTML file')
+                continue
+            
+            try:
+                # Read file content
+                content = file.read().decode('utf-8')
+                
+                # Parse metadata from HTML comments
+                metadata = parse_template_metadata(content)
+                
+                # Extract template name from filename
+                name = file.name.replace('.html', '').replace('-', ' ').replace('_', ' ').title()
+                
+                # Override name if provided in metadata
+                if metadata.get('NAME'):
+                    name = metadata['NAME']
+                
+                subject = metadata.get('SUBJECT', name)
+                description = metadata.get('DESCRIPTION', '')
+                
+                # Auto-detect variables
+                import re
+                variables = re.findall(r'\{\{(\w+)\}\}', content)
+                variables_dict = {var: f'Variable: {var}' for var in set(variables)}
+                
+                # Generate plain text version (strip HTML tags)
+                from django.utils.html import strip_tags
+                body_text = strip_tags(content)
+                
+                # Create template
+                template = EmailTemplate.objects.create(
+                    name=name,
+                    subject=subject,
+                    body_html=content,
+                    body_text=body_text,
+                    is_active=True,
+                    user=None,  # Shared template
+                    available_variables=variables_dict
+                )
+                
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f'{file.name}: {str(e)}')
+        
+        if imported_count > 0:
+            messages.success(request, f'✅ Successfully imported {imported_count} template(s)!')
+        
+        if errors:
+            for error in errors:
+                messages.warning(request, f'⚠️ {error}')
+        
+        return redirect('email_templates')
+    
+    # GET: Show template list and upload form
+    templates_list = EmailTemplate.objects.all().order_by('-created_at')
+    
+    context = {
+        'templates': templates_list,
+    }
+    
+    return render(request, 'email_management/templates.html', context)
+
+
+def parse_template_metadata(html_content):
+    """
+    Parse metadata from HTML comments at the top of the file.
+    
+    Expected format:
+    <!--
+    SUBJECT: Email subject line
+    NAME: Template name (optional)
+    DESCRIPTION: Template description (optional)
+    -->
+    
+    Returns dict of metadata.
+    """
+    import re
+    
+    # Find first HTML comment
+    comment_match = re.search(r'<!--\s*(.*?)\s*-->', html_content, re.DOTALL)
+    
+    if not comment_match:
+        return {}
+    
+    comment_text = comment_match.group(1)
+    
+    # Parse KEY: VALUE pairs
+    metadata = {}
+    for line in comment_text.split('\n'):
+        line = line.strip()
+        if ':' in line:
+            key, value = line.split(':', 1)
+            metadata[key.strip().upper()] = value.strip()
+    
+    return metadata
 
 
 @login_required(login_url='/email/login/')

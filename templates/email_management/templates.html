@@ -4,33 +4,52 @@
 
 {% block extra_css %}
 <style>
-    .templates-container {
-        max-width: 1400px;
-        margin: 0 auto;
+    .upload-section {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
     }
     
-    .actions-bar {
-        background: white;
-        padding: 20px;
+    .upload-area {
+        border: 3px dashed #3498db;
         border-radius: 8px;
-        margin-bottom: 20px;
-        display: flex;
-        gap: 15px;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 40px;
+        text-align: center;
+        background: #f8f9fa;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    
+    .upload-area:hover {
+        background: #e3f2fd;
+        border-color: #2980b9;
+    }
+    
+    .upload-area.dragover {
+        background: #bbdefb;
+        border-color: #1976d2;
+    }
+    
+    .upload-icon {
+        font-size: 48px;
+        color: #3498db;
+        margin-bottom: 15px;
+    }
+    
+    .file-input {
+        display: none;
     }
     
     .btn {
-        padding: 10px 20px;
-        border: none;
+        padding: 12px 30px;
         border-radius: 4px;
-        font-size: 14px;
+        border: none;
+        font-size: 16px;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
+        transition: background 0.2s;
     }
     
     .btn-primary {
@@ -51,639 +70,287 @@
         background: #c0392b;
     }
     
-    .btn-secondary {
-        background: #95a5a6;
-        color: white;
-    }
-    
-    .btn-secondary:hover {
-        background: #7f8c8d;
-    }
-    
-    .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    
-    .upload-zone {
+    .templates-list {
         background: white;
-        border: 3px dashed #ddd;
-        border-radius: 8px;
-        padding: 40px;
-        text-align: center;
-        margin-bottom: 20px;
-        transition: all 0.3s;
-        cursor: pointer;
-    }
-    
-    .upload-zone:hover, .upload-zone.drag-over {
-        border-color: #3498db;
-        background: #ecf0f1;
-    }
-    
-    .upload-zone.drag-over {
-        border-color: #27ae60;
-        background: #d5f4e6;
-    }
-    
-    .upload-zone-icon {
-        font-size: 48px;
-        margin-bottom: 15px;
-    }
-    
-    .templates-grid {
-        display: grid;
-        grid-template-columns: 250px 1fr;
-        gap: 20px;
-    }
-    
-    .folder-tree {
-        background: white;
-        padding: 20px;
+        padding: 30px;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
-    .folder {
+    .template-card {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 4px;
         margin-bottom: 15px;
+        transition: all 0.2s;
     }
     
-    .folder-header {
+    .template-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .template-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .template-name {
+        font-size: 18px;
         font-weight: 600;
         color: #2c3e50;
+    }
+    
+    .template-subject {
+        color: #7f8c8d;
+        font-size: 14px;
         margin-bottom: 10px;
+    }
+    
+    .template-meta {
         display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    
-    .folder-header:hover {
-        background: #ecf0f1;
-    }
-    
-    .folder-header.active {
-        background: #3498db;
-        color: white;
-    }
-    
-    .folder-count {
+        gap: 15px;
         font-size: 12px;
-        opacity: 0.7;
-        font-weight: normal;
+        color: #95a5a6;
     }
     
-    .files-list {
-        background: white;
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .badge-success {
+        background: #e8f5e9;
+        color: #27ae60;
+    }
+    
+    .badge-danger {
+        background: #ffebee;
+        color: #e74c3c;
+    }
+    
+    .variables-list {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .variable-tag {
+        display: inline-block;
+        padding: 3px 8px;
+        background: #e3f2fd;
+        color: #2196f3;
+        border-radius: 4px;
+        margin: 2px;
+        font-size: 11px;
+        font-family: monospace;
+    }
+    
+    .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
         padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    
+    .selected-files {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        display: none;
     }
     
     .file-item {
+        padding: 8px;
+        background: white;
         border: 1px solid #ddd;
         border-radius: 4px;
-        padding: 15px;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        transition: all 0.2s;
-        cursor: pointer;
-    }
-    
-    .file-item:hover {
-        border-color: #3498db;
-        background: #ecf0f1;
-    }
-    
-    .file-item.selected {
-        background: #d5e8f7;
-        border-color: #3498db;
-    }
-    
-    .file-checkbox {
-        width: 20px;
-        height: 20px;
-        cursor: pointer;
-    }
-    
-    .file-icon {
-        font-size: 24px;
-    }
-    
-    .file-info {
-        flex: 1;
-    }
-    
-    .file-name {
-        font-weight: 500;
-        color: #2c3e50;
-        margin-bottom: 4px;
-    }
-    
-    .file-meta {
-        font-size: 12px;
-        color: #7f8c8d;
-    }
-    
-    .file-actions {
-        display: flex;
-        gap: 8px;
-    }
-    
-    .file-action-btn {
-        padding: 6px 12px;
-        font-size: 12px;
-        border: none;
-        border-radius: 3px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .btn-edit {
-        background: #3498db;
-        color: white;
-    }
-    
-    .btn-edit:hover {
-        background: #2980b9;
-    }
-    
-    .btn-delete {
-        background: #e74c3c;
-        color: white;
-    }
-    
-    .btn-delete:hover {
-        background: #c0392b;
-    }
-    
-    .editor-modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.7);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .editor-modal.active {
-        display: flex;
-    }
-    
-    .editor-content {
-        background: white;
-        width: 90%;
-        max-width: 1200px;
-        height: 80%;
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .editor-header {
-        padding: 20px;
-        border-bottom: 1px solid #ddd;
+        margin-bottom: 5px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
     
-    .editor-body {
-        flex: 1;
-        padding: 20px;
-        overflow: auto;
-    }
-    
-    .editor-footer {
-        padding: 20px;
-        border-top: 1px solid #ddd;
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-    }
-    
-    #code-editor {
-        width: 100%;
-        height: 100%;
-        font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-        font-size: 14px;
-        padding: 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        resize: none;
-    }
-    
     .empty-state {
         text-align: center;
-        padding: 60px 20px;
+        padding: 40px;
         color: #7f8c8d;
-    }
-    
-    .empty-state-icon {
-        font-size: 64px;
-        margin-bottom: 20px;
-        opacity: 0.3;
-    }
-    
-    #file-input {
-        display: none;
-    }
-    
-    .selection-info {
-        background: #ecf0f1;
-        padding: 10px 15px;
-        border-radius: 4px;
-        font-size: 14px;
-        color: #2c3e50;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="templates-container">
-    <h1 style="margin-bottom: 30px;">📝 Email Templates</h1>
+<h1 style="margin-bottom: 30px;">📧 Email Templates</h1>
+
+<!-- Upload Section -->
+<div class="upload-section">
+    <h2 style="margin-bottom: 20px;">Upload Templates</h2>
     
-    <!-- Actions Bar -->
-    <div class="actions-bar">
-        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
-            📤 Upload Files
-        </button>
-        <button class="btn btn-secondary" onclick="createNewTemplate()">
-            ➕ New Template
-        </button>
-        <button class="btn btn-danger" id="delete-btn" onclick="deleteSelected()" disabled>
-            🗑️ Delete Selected
-        </button>
-        <div class="selection-info" id="selection-info" style="display: none; margin-left: auto;">
-            <span id="selection-count">0</span> file(s) selected
-        </div>
+    <div class="info-box">
+        <p><strong>How to format your HTML templates:</strong></p>
+        <p style="margin: 10px 0;">Add metadata at the top of your HTML file using HTML comments:</p>
+        <pre style="background: white; padding: 15px; border-radius: 4px; overflow-x: auto;"><!--
+SUBJECT: Welcome to The 80% Bill, {{first_name}}!
+NAME: Welcome Email (optional - defaults to filename)
+DESCRIPTION: Sent to new pledge signers (optional)
+-->
+&lt;html&gt;
+&lt;body&gt;
+  &lt;h1&gt;Hello {{first_name}}!&lt;/h1&gt;
+  &lt;p&gt;Thank you from {{district}}.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+        <p style="margin-top: 10px;"><strong>Variables:</strong> Use <code>{{variable_name}}</code> syntax. They'll be auto-detected.</p>
     </div>
     
-    <!-- Upload Zone -->
-    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
-        <div class="upload-zone-icon">📁</div>
-        <h3>Drag & Drop HTML Files Here</h3>
-        <p>or click to browse files</p>
-        <p style="font-size: 12px; color: #7f8c8d; margin-top: 10px;">Accepts .html files</p>
-    </div>
-    
-    <input type="file" id="file-input" multiple accept=".html" onchange="handleFileSelect(event)">
-    
-    <!-- Templates Grid -->
-    <div class="templates-grid">
-        <!-- Folder Tree -->
-        <div class="folder-tree">
-            <h3 style="margin-bottom: 20px;">📂 Folders</h3>
-            <div class="folder">
-                <div class="folder-header active" onclick="filterFolder('all')" data-folder="all">
-                    📚 All Templates
-                    <span class="folder-count">({{ templates.common|length|add:templates.district_emails|length }})</span>
-                </div>
-            </div>
-            <div class="folder">
-                <div class="folder-header" onclick="filterFolder('common')" data-folder="common">
-                    📄 Common
-                    <span class="folder-count">({{ templates.common|length }})</span>
-                </div>
-            </div>
-            <div class="folder">
-                <div class="folder-header" onclick="filterFolder('district-emails')" data-folder="district-emails">
-                    🗺️ District Emails
-                    <span class="folder-count">({{ templates.district_emails|length }})</span>
-                </div>
-            </div>
+    <form method="post" enctype="multipart/form-data" id="upload-form">
+        {% csrf_token %}
+        
+        <div class="upload-area" id="upload-area">
+            <div class="upload-icon">📤</div>
+            <h3>Drag & Drop HTML Files Here</h3>
+            <p style="color: #7f8c8d; margin: 10px 0;">or</p>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                Choose Files
+            </button>
+            <p style="color: #95a5a6; font-size: 14px; margin-top: 15px;">
+                Accepts multiple .html files
+            </p>
         </div>
         
-        <!-- Files List -->
-        <div class="files-list" id="files-list">
-            <!-- All templates -->
-            {% for category, files in templates.items %}
-                {% for file in files %}
-                <div class="file-item" data-category="{{ category }}" data-filename="{{ file.filename }}" onclick="toggleSelect(this, event)">
-                    <input type="checkbox" class="file-checkbox" onclick="event.stopPropagation(); toggleSelect(this.parentElement, event, true)">
-                    <div class="file-icon">📄</div>
-                    <div class="file-info">
-                        <div class="file-name">{{ file.name }}</div>
-                        <div class="file-meta">{{ category }} • {{ file.filename }}</div>
-                    </div>
-                    <div class="file-actions" onclick="event.stopPropagation()">
-                        <button class="file-action-btn btn-edit" onclick="editTemplate('{{ category }}', '{{ file.filename }}')">✏️ Edit</button>
-                        <button class="file-action-btn btn-delete" onclick="deleteTemplate('{{ category }}', '{{ file.filename }}')">🗑️</button>
-                    </div>
+        <input type="file" 
+               id="file-input" 
+               name="template_files" 
+               class="file-input" 
+               accept=".html"
+               multiple
+               onchange="handleFileSelect(event)">
+        
+        <div class="selected-files" id="selected-files">
+            <h4 style="margin: 0 0 10px 0;">Selected Files:</h4>
+            <div id="file-list"></div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 15px;">
+                📥 Import Templates
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Templates List -->
+<div class="templates-list">
+    <h2 style="margin-bottom: 20px;">Existing Templates ({{ templates.count }})</h2>
+    
+    {% if templates %}
+        {% for template in templates %}
+        <div class="template-card">
+            <div class="template-header">
+                <div>
+                    <div class="template-name">{{ template.name }}</div>
+                    {% if template.is_active %}
+                    <span class="badge badge-success">✓ Active</span>
+                    {% else %}
+                    <span class="badge badge-danger">✗ Inactive</span>
+                    {% endif %}
                 </div>
+                <div>
+                    <a href="/admin/email_management/emailtemplate/{{ template.id }}/change/" 
+                       class="btn btn-primary" 
+                       style="padding: 8px 20px; text-decoration: none; display: inline-block;">
+                        ✏️ Edit
+                    </a>
+                </div>
+            </div>
+            
+            <div class="template-subject">
+                <strong>Subject:</strong> {{ template.subject }}
+            </div>
+            
+            {% if template.available_variables %}
+            <div class="variables-list">
+                <strong style="font-size: 12px;">Variables:</strong>
+                {% for var in template.available_variables.keys %}
+                <span class="variable-tag">{{var}}</span>
                 {% endfor %}
-            {% empty %}
-                <div class="empty-state">
-                    <div class="empty-state-icon">📭</div>
-                    <h3>No templates yet</h3>
-                    <p>Upload your first HTML email template to get started</p>
-                </div>
-            {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="template-meta">
+                <span>📅 Created: {{ template.created_at|date:"M d, Y" }}</span>
+                <span>📊 Used in campaigns: {{ template.emailcampaign_set.count }}</span>
+            </div>
         </div>
-    </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
+            <h3>No templates yet</h3>
+            <p>Upload some HTML files above to get started!</p>
+        </div>
+    {% endif %}
 </div>
 
-<!-- Editor Modal -->
-<div class="editor-modal" id="editor-modal">
-    <div class="editor-content">
-        <div class="editor-header">
-            <h2 id="editor-title">Edit Template</h2>
-            <button class="btn btn-secondary" onclick="closeEditor()">✖ Close</button>
-        </div>
-        <div class="editor-body">
-            <textarea id="code-editor" placeholder="HTML content..."></textarea>
-        </div>
-        <div class="editor-footer">
-            <button class="btn btn-secondary" onclick="previewTemplate()">👁️ Preview</button>
-            <button class="btn btn-primary" onclick="saveTemplate()">💾 Save Changes</button>
-        </div>
-    </div>
-</div>
-
-<!-- Preview Modal -->
-<div id="preview-modal" class="editor-modal">
-    <div class="editor-content">
-        <div class="editor-header">
-            <h2>📧 Email Preview</h2>
-            <button class="btn btn-secondary" onclick="closePreview()">✖ Close</button>
-        </div>
-        <div class="editor-body" style="padding: 0; background: white;">
-            <iframe id="preview-frame" style="width: 100%; height: 100%; border: none;"></iframe>
-        </div>
-        <div class="editor-footer">
-            <button class="btn btn-secondary" onclick="closePreview()">Close</button>
-        </div>
-    </div>
-</div>
-
+{% verbatim %}
 <script>
-let selectedFiles = new Set();
-let currentEditingFile = null;
+const uploadArea = document.getElementById('upload-area');
+const fileInput = document.getElementById('file-input');
+const selectedFilesDiv = document.getElementById('selected-files');
+const fileListDiv = document.getElementById('file-list');
 
-// Drag and drop
-const uploadZone = document.getElementById('upload-zone');
-
-uploadZone.addEventListener('dragover', (e) => {
+// Drag and drop handlers
+uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
-    uploadZone.classList.add('drag-over');
+    uploadArea.classList.add('dragover');
 });
 
-uploadZone.addEventListener('dragleave', () => {
-    uploadZone.classList.remove('drag-over');
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
 });
 
-uploadZone.addEventListener('drop', (e) => {
+uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
-    uploadZone.classList.remove('drag-over');
-    handleFiles(e.dataTransfer.files);
+    uploadArea.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    fileInput.files = files;
+    handleFileSelect({ target: { files } });
 });
 
-// File selection
 function handleFileSelect(event) {
-    handleFiles(event.target.files);
-}
-
-function handleFiles(files) {
-    const formData = new FormData();
-    let htmlFiles = 0;
+    const files = event.target.files;
     
-    for (let file of files) {
-        if (file.name.endsWith('.html')) {
-            formData.append('files', file);
-            htmlFiles++;
-        }
-    }
-    
-    if (htmlFiles === 0) {
-        alert('Please select HTML files only (.html)');
+    if (files.length === 0) {
+        selectedFilesDiv.style.display = 'none';
         return;
     }
     
-    // Ask for folder
-    const folder = prompt('Upload to folder (common or district-emails):', 'common');
-    if (!folder || (folder !== 'common' && folder !== 'district-emails')) {
-        alert('Please enter either "common" or "district-emails"');
-        return;
+    // Show selected files
+    selectedFilesDiv.style.display = 'block';
+    fileListDiv.innerHTML = '';
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <span>📄 ${file.name}</span>
+            <span style="color: #95a5a6; font-size: 12px;">${formatFileSize(file.size)}</span>
+        `;
+        fileListDiv.appendChild(fileItem);
     }
-    
-    formData.append('folder', folder);
-    
-    // Upload
-    fetch('/email/templates/upload/', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(`✅ Uploaded ${data.count} file(s) successfully!`);
-            location.reload();
-        } else {
-            alert(`❌ Error: ${data.error}`);
-        }
-    })
-    .catch(error => {
-        alert(`❌ Upload failed: ${error}`);
-    });
 }
 
-// Filter folders
-function filterFolder(folder) {
-    // Update active folder
-    document.querySelectorAll('.folder-header').forEach(el => {
-        el.classList.remove('active');
-    });
-    document.querySelector(`[data-folder="${folder}"]`).classList.add('active');
-    
-    // Filter files
-    const fileItems = document.querySelectorAll('.file-item');
-    fileItems.forEach(item => {
-        if (folder === 'all' || item.dataset.category === folder) {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
-        }
-    });
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
-
-// File selection
-function toggleSelect(element, event, fromCheckbox = false) {
-    if (!fromCheckbox) {
-        const checkbox = element.querySelector('.file-checkbox');
-        checkbox.checked = !checkbox.checked;
-    }
-    
-    const key = `${element.dataset.category}/${element.dataset.filename}`;
-    
-    if (element.querySelector('.file-checkbox').checked) {
-        selectedFiles.add(key);
-        element.classList.add('selected');
-    } else {
-        selectedFiles.delete(key);
-        element.classList.remove('selected');
-    }
-    
-    updateSelectionUI();
-}
-
-function updateSelectionUI() {
-    const count = selectedFiles.size;
-    document.getElementById('selection-count').textContent = count;
-    document.getElementById('selection-info').style.display = count > 0 ? 'block' : 'none';
-    document.getElementById('delete-btn').disabled = count === 0;
-}
-
-// Delete
-function deleteSelected() {
-    if (selectedFiles.size === 0) return;
-    
-    const confirmMsg = `Delete ${selectedFiles.size} file(s)? This cannot be undone.`;
-    if (!confirm(confirmMsg)) return;
-    
-    const files = Array.from(selectedFiles);
-    
-    fetch('/email/templates/delete/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({ files })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(`✅ Deleted ${data.count} file(s)`);
-            location.reload();
-        } else {
-            alert(`❌ Error: ${data.error}`);
-        }
-    });
-}
-
-function deleteTemplate(category, filename) {
-    if (!confirm(`Delete ${filename}?`)) return;
-    
-    fetch('/email/templates/delete/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({ files: [`${category}/${filename}`] })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ Deleted successfully');
-            location.reload();
-        } else {
-            alert(`❌ Error: ${data.error}`);
-        }
-    });
-}
-
-// Editor
-function editTemplate(category, filename) {
-    currentEditingFile = { category, filename };
-    
-    fetch(`/email/templates/get/?category=${category}&filename=${filename}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('editor-title').textContent = `Edit: ${filename}`;
-                document.getElementById('code-editor').value = data.content;
-                document.getElementById('editor-modal').classList.add('active');
-            } else {
-                alert(`❌ Error loading file: ${data.error}`);
-            }
-        });
-}
-
-function closeEditor() {
-    document.getElementById('editor-modal').classList.remove('active');
-    currentEditingFile = null;
-}
-
-function previewTemplate() {
-    const htmlContent = document.getElementById('code-editor').value;
-    const previewFrame = document.getElementById('preview-frame');
-    const previewModal = document.getElementById('preview-modal');
-    
-    // Write HTML to iframe
-    const iframeDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
-    
-    // Show preview modal
-    previewModal.classList.add('active');
-}
-
-function closePreview() {
-    document.getElementById('preview-modal').classList.remove('active');
-}
-
-function saveTemplate() {
-    if (!currentEditingFile) return;
-    
-    const content = document.getElementById('code-editor').value;
-    
-    fetch('/email/templates/save/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({
-            category: currentEditingFile.category,
-            filename: currentEditingFile.filename,
-            content: content
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ Saved successfully!');
-            closeEditor();
-        } else {
-            alert(`❌ Error saving: ${data.error}`);
-        }
-    });
-}
-
-function createNewTemplate() {
-    const filename = prompt('Enter template filename (without .html):');
-    if (!filename) return;
-    
-    const folder = prompt('Folder (common or district-emails):', 'common');
-    if (!folder || (folder !== 'common' && folder !== 'district-emails')) {
-        alert('Please enter either "common" or "district-emails"');
-        return;
-    }
-    
-    currentEditingFile = { category: folder, filename: filename + '.html' };
-    document.getElementById('editor-title').textContent = `Create: ${filename}.html`;
-    document.getElementById('code-editor').value = '';
-    document.getElementById('editor-modal').classList.add('active');
-}
-
-// Close modal on ESC
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        closeEditor();
-    }
-});
 </script>
+{% endverbatim %}
 {% endblock %}
