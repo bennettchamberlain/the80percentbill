@@ -22,4 +22,4 @@ echo "=== Migration deployment complete! ==="
 echo "Starting server..."
 
 # Step 4: Start the server
-exec gunicorn the_80_percent_bill.wsgi:application --bind 0.0.0.0:$PORT
+exec python -m gunicorn the_80_percent_bill.wsgi:application --bind 0.0.0.0:$PORT
