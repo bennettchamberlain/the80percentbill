@@ -113,28 +113,138 @@ class Contact(models.Model):
 
 class ContactList(models.Model):
     """
-    Lists/segments for organizing contacts.
+    Named lists for organizing recipients.
+    
+    Lists provide a way to group recipients (contacts and/or pledges)
+    for targeted campaign sending.
     """
     name = models.CharField(max_length=255, verbose_name='List Name')
     description = models.TextField(blank=True, verbose_name='Description')
-    contacts = models.ManyToManyField(Contact, related_name='lists', verbose_name='Contacts')
-    
     created_by = models.ForeignKey(
         EmailUser,
         on_delete=models.CASCADE,
-        related_name='contact_lists',
+        related_name='created_lists',
         verbose_name='Created By'
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
+        db_table = 'contact_lists'
         verbose_name = 'Contact List'
         verbose_name_plural = 'Contact Lists'
         ordering = ['-created_at']
-    
+        
     def __str__(self):
-        return f"{self.name} ({self.contacts.count()} contacts)"
+        return self.name
+    
+    def member_count(self):
+        """Return total number of members in this list."""
+        return self.members.count()
+
+
+class ContactListMember(models.Model):
+    """
+    Membership record linking lists to recipients.
+    
+    How list membership works:
+    ---------------------------
+    Each member represents ONE recipient in a list.
+    
+    A member may reference either:
+    • A contact (contact_id is set, pledge_id is null)
+    • A pledge (pledge_id is set, contact_id is null)
+    
+    Exactly one of these fields must be populated.
+    
+    This design allows lists to contain:
+    - Only contacts (general mailing list)
+    - Only pledges (campaign-specific)
+    - Mixed audiences (both contacts and pledges)
+    
+    When resolving recipients for a campaign, the system will:
+    1. Iterate through all members of target lists
+    2. Convert each member to a Recipient instance
+    3. Deduplicate by email address
+    4. Apply subscription filters
+    """
+    list = models.ForeignKey(
+        ContactList,
+        on_delete=models.CASCADE,
+        related_name='members'
+    )
+    contact = models.ForeignKey(
+        Contact,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='list_memberships'
+    )
+    pledge = models.ForeignKey(
+        'pledge.Pledge',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='list_memberships'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'contact_list_members'
+        indexes = [
+            models.Index(fields=['contact']),
+            models.Index(fields=['pledge']),
+            models.Index(fields=['list']),
+        ]
+        # Prevent duplicate memberships
+        unique_together = [
+            ['list', 'contact'],
+            ['list', 'pledge'],
+        ]
+    
+    def clean(self):
+        """
+        Validate that exactly one of contact_id or pledge_id is set.
+        
+        This enforces the mutual exclusivity constraint:
+        - Both null: Invalid (no recipient)
+        - Both set: Invalid (ambiguous recipient)
+        - One set: Valid
+        """
+        from django.core.exceptions import ValidationError
+        
+        has_contact = self.contact_id is not None
+        has_pledge = self.pledge_id is not None
+        
+        if not has_contact and not has_pledge:
+            raise ValidationError(
+                'Either contact or pledge must be specified.'
+            )
+        
+        if has_contact and has_pledge:
+            raise ValidationError(
+                'Cannot specify both contact and pledge. Choose one.'
+            )
+    
+    def save(self, *args, **kwargs):
+        """Override save to run validation."""
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
+    def get_recipient(self):
+        """
+        Return a Recipient instance for this member.
+        
+        Returns:
+            Recipient instance (from email_management.recipient)
+        """
+        from email_management.recipient import Recipient
+        
+        if self.contact:
+            return Recipient.from_contact(self.contact)
+        elif self.pledge:
+            return Recipient.from_pledge(self.pledge)
+        else:
+            raise ValueError('Member has no contact or pledge')
 
 
 class SMTPConfiguration(models.Model):

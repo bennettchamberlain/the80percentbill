@@ -5,6 +5,7 @@ from .models import (
     EmailUser,
     Contact,
     ContactList,
+    ContactListMember,
     SMTPConfiguration,
     EmailTemplate,
     EmailCampaign,
@@ -84,6 +85,17 @@ class ContactAdmin(admin.ModelAdmin):
     resubscribe_contacts.short_description = 'Resubscribe selected contacts'
 
 
+class ContactListMemberInline(admin.TabularInline):
+    """
+    Inline admin for list members.
+    """
+    model = ContactListMember
+    extra = 1
+    fields = ['contact', 'pledge', 'created_at']
+    readonly_fields = ['created_at']
+    autocomplete_fields = ['contact']
+
+
 @admin.register(ContactList)
 class ContactListAdmin(admin.ModelAdmin):
     """
@@ -91,37 +103,34 @@ class ContactListAdmin(admin.ModelAdmin):
     """
     list_display = [
         'name',
-        'contact_count',
+        'member_count_display',
         'created_by',
         'created_at',
     ]
     list_filter = ['created_at', 'created_by']
     search_fields = ['name', 'description']
     ordering = ['-created_at']
-    filter_horizontal = ['contacts']
+    inlines = [ContactListMemberInline]
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'description', 'created_by')
         }),
-        ('Contacts', {
-            'fields': ('contacts',)
-        }),
         ('Metadata', {
-            'fields': ('created_at', 'updated_at'),
+            'fields': ('created_at',),
             'classes': ('collapse',),
         }),
     )
     
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at']
     
-    def contact_count(self, obj):
-        count = obj.contacts.count()
+    def member_count_display(self, obj):
+        count = obj.member_count()
         return format_html(
-            '<span style="color: #666;">{} contacts</span>',
+            '<span style="color: #666;">{} members</span>',
             count
         )
-    contact_count.short_description = 'Contacts'
+    member_count_display.short_description = 'Members'
 
 
 @admin.register(EmailUser)
