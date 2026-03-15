@@ -165,17 +165,11 @@ def smtp_configs(request):
 @user_passes_test(can_access_email_management, login_url='/email/login/')
 def templates(request):
     """
-    View and manage HTML email templates from filesystem.
+    View and manage email templates from database.
+    Now uses EmailTemplate model instead of filesystem.
     """
-    from .template_loader import EmailTemplateLoader
-    
-    templates_dict = EmailTemplateLoader.get_available_templates()
-    
-    context = {
-        'templates': templates_dict,
-    }
-    
-    return render(request, 'email_management/templates.html', context)
+    # Redirect to Django admin for template management
+    return redirect('/admin/email_management/emailtemplate/')
 
 
 @login_required(login_url='/email/login/')
@@ -560,19 +554,17 @@ def recipient_detail(request, contact_id):
 def test_email(request):
     """
     Test email sending interface.
-    Select template, recipient, and send test email.
+    Select database template, recipient, and send test email.
     """
     user = request.user
     
     if request.method == 'POST':
         # Get form data
-        template_category = request.POST.get('template_category')
-        template_filename = request.POST.get('template_filename')
+        template_id = request.POST.get('template_id')
         recipient_source = request.POST.get('recipient_source')  # 'pledge' or 'manual'
         recipient_email = request.POST.get('recipient_email', '').strip()
         pledge_id = request.POST.get('pledge_id')
-        subject = request.POST.get('subject', 'Test Email from The 80% Bill')
-        from_email = request.POST.get('from_email', '')  # New: sender selection
+        from_email = request.POST.get('from_email', '')
         
         # Get template variables
         template_vars = {}
@@ -582,15 +574,20 @@ def test_email(request):
                 template_vars[var_name] = request.POST.get(key)
         
         try:
-            # Load template
-            html_content = EmailTemplateLoader.load_template(template_category, template_filename)
+            # Load database template
+            template = EmailTemplate.objects.get(id=template_id, is_active=True)
             
-            # Render with variables
-            rendered_html = EmailTemplateLoader.render_template(html_content, template_vars)
+            # Render template with variables
+            import re
+            rendered_html = template.body_html
+            rendered_subject = template.subject
+            
+            for var_name, value in template_vars.items():
+                placeholder = f'{{{{{var_name}}}}}'
+                rendered_html = rendered_html.replace(placeholder, str(value or ''))
+                rendered_subject = rendered_subject.replace(placeholder, str(value or ''))
             
             # Get or create contact
-            from .models import Contact
-            
             if recipient_source == 'pledge' and pledge_id:
                 # Get from pledge
                 pledge = Pledge.objects.get(id=pledge_id)
@@ -627,7 +624,7 @@ def test_email(request):
             # Use selected from_email or default
             log = service.send_email(
                 to_email=recipient_email,
-                subject=subject,
+                subject=rendered_subject,
                 html_body=rendered_html,
                 user=user,
                 contact=contact,
@@ -648,6 +645,9 @@ def test_email(request):
             
             return redirect('email_test')
             
+        except EmailTemplate.DoesNotExist:
+            messages.error(request, 'Template not found or inactive.')
+            return redirect('email_test')
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
             return redirect('email_test')
@@ -655,7 +655,8 @@ def test_email(request):
     # GET request - show form
     from .models import SenderEmail
     
-    templates = EmailTemplateLoader.get_available_templates()
+    # Get database templates
+    templates = EmailTemplate.objects.filter(is_active=True).order_by('name')
     pledges = Pledge.objects.all().order_by('-timestamp')[:50]  # Recent 50 pledges
     sender_emails = SenderEmail.objects.filter(is_active=True).order_by('-is_verified', 'email')
     
@@ -677,139 +678,7 @@ from pledge.models import Pledge
 
 @login_required(login_url='/email/login/')
 @user_passes_test(can_access_email_management, login_url='/email/login/')
-def template_upload(request):
-    """
-    Upload HTML template files.
-    """
-    import os
-    from django.http import JsonResponse
-    from .template_loader import EmailTemplateLoader
-    
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'POST required'})
-    
-    folder = request.POST.get('folder', 'common')
-    if folder not in ['common', 'district-emails']:
-        return JsonResponse({'success': False, 'error': 'Invalid folder'})
-    
-    files = request.FILES.getlist('files')
-    if not files:
-        return JsonResponse({'success': False, 'error': 'No files provided'})
-    
-    uploaded_count = 0
-    template_dir = os.path.join(EmailTemplateLoader.TEMPLATE_DIR, folder)
-    os.makedirs(template_dir, exist_ok=True)
-    
-    for file in files:
-        if not file.name.endswith('.html'):
-            continue
-        
-        file_path = os.path.join(template_dir, file.name)
-        with open(file_path, 'wb+') as destination:
-            for chunk in file.chunks():
-                destination.write(chunk)
-        uploaded_count += 1
-    
-    return JsonResponse({'success': True, 'count': uploaded_count})
+# File-based template management functions removed
+# Templates are now managed via Django admin (/admin/email_management/emailtemplate/)
+# Old functions: template_upload, template_get, template_save, template_delete
 
-
-@login_required(login_url='/email/login/')
-@user_passes_test(can_access_email_management, login_url='/email/login/')
-def template_get(request):
-    """
-    Get template content for editing.
-    """
-    from django.http import JsonResponse
-    from .template_loader import EmailTemplateLoader
-    
-    category = request.GET.get('category')
-    filename = request.GET.get('filename')
-    
-    if not category or not filename:
-        return JsonResponse({'success': False, 'error': 'Missing parameters'})
-    
-    try:
-        content = EmailTemplateLoader.load_template(category, filename)
-        return JsonResponse({'success': True, 'content': content})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
-
-@login_required(login_url='/email/login/')
-@user_passes_test(can_access_email_management, login_url='/email/login/')
-def template_save(request):
-    """
-    Save template content.
-    """
-    import os
-    import json
-    from django.http import JsonResponse
-    from .template_loader import EmailTemplateLoader
-    
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'POST required'})
-    
-    try:
-        data = json.loads(request.body)
-        category = data.get('category')
-        filename = data.get('filename')
-        content = data.get('content')
-        
-        if not category or not filename or content is None:
-            return JsonResponse({'success': False, 'error': 'Missing parameters'})
-        
-        if category not in ['common', 'district-emails']:
-            return JsonResponse({'success': False, 'error': 'Invalid category'})
-        
-        template_dir = os.path.join(EmailTemplateLoader.TEMPLATE_DIR, category)
-        os.makedirs(template_dir, exist_ok=True)
-        
-        file_path = os.path.join(template_dir, filename)
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
-
-@login_required(login_url='/email/login/')
-@user_passes_test(can_access_email_management, login_url='/email/login/')
-def template_delete(request):
-    """
-    Delete template files.
-    """
-    import os
-    import json
-    from django.http import JsonResponse
-    from .template_loader import EmailTemplateLoader
-    
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'POST required'})
-    
-    try:
-        data = json.loads(request.body)
-        files = data.get('files', [])
-        
-        if not files:
-            return JsonResponse({'success': False, 'error': 'No files specified'})
-        
-        deleted_count = 0
-        for file_path in files:
-            # file_path format: "category/filename.html"
-            parts = file_path.split('/')
-            if len(parts) != 2:
-                continue
-            
-            category, filename = parts
-            if category not in ['common', 'district-emails']:
-                continue
-            
-            full_path = os.path.join(EmailTemplateLoader.TEMPLATE_DIR, category, filename)
-            if os.path.exists(full_path):
-                os.remove(full_path)
-                deleted_count += 1
-        
-        return JsonResponse({'success': True, 'count': deleted_count})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})

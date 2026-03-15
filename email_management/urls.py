@@ -15,7 +15,7 @@ urlpatterns = [
     
     # Management pages
     path('smtp/', views.smtp_configs, name='email_smtp_configs'),
-    path('templates/', views.templates, name='email_templates'),
+    path('templates/', views.templates, name='email_templates'),  # Redirects to admin
     
     # Campaign pages
     path('campaigns/', views.campaigns, name='email_campaigns'),
@@ -29,10 +29,5 @@ urlpatterns = [
     path('logs/', views.logs, name='email_logs'),  # Keep old URL for backwards compatibility
     path('history/', views.logs, name='email_history'),  # New URL
     path('recipients/<int:contact_id>/', views.recipient_detail, name='recipient_detail'),
-    
-    # Template management API
-    path('templates/upload/', views.template_upload, name='template_upload'),
-    path('templates/get/', views.template_get, name='template_get'),
-    path('templates/save/', views.template_save, name='template_save'),
-    path('templates/delete/', views.template_delete, name='template_delete'),
 ]
+

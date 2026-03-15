@@ -46,43 +46,6 @@
         font-family: monospace;
     }
     
-    .template-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-    
-    .template-card {
-        border: 2px solid #ddd;
-        padding: 15px;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .template-card:hover {
-        border-color: #3498db;
-        background: #ecf0f1;
-    }
-    
-    .template-card.selected {
-        border-color: #3498db;
-        background: #d5e8f7;
-    }
-    
-    .template-card h3 {
-        margin: 0 0 5px 0;
-        font-size: 14px;
-        color: #2c3e50;
-    }
-    
-    .template-card p {
-        margin: 0;
-        font-size: 12px;
-        color: #7f8c8d;
-    }
-    
     .btn {
         padding: 12px 30px;
         border-radius: 4px;
@@ -131,11 +94,30 @@
         grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
+    
+    .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    
+    .info-box p {
+        margin: 0;
+        color: #1976d2;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <h1 style="margin-bottom: 30px;">📧 Send Test Email</h1>
+
+{% if not templates %}
+<div class="info-box">
+    <p><strong>No templates available.</strong> Create email templates in the <a href="/admin/email_management/emailtemplate/">Django Admin</a> first.</p>
+</div>
+{% endif %}
 
 <form method="post" id="test-email-form">
     {% csrf_token %}
@@ -144,34 +126,24 @@
     <div class="form-section">
         <h2>1. Select Email Template</h2>
         
-        <h3 style="font-size: 14px; color: #7f8c8d; margin: 0 0 10px 0;">Common Templates</h3>
-        <div class="template-grid">
-            {% for template in templates.common %}
-            <div class="template-card" 
-                 data-category="common" 
-                 data-filename="{{ template.filename }}"
-                 onclick="selectTemplate(this)">
-                <h3>{{ template.name }}</h3>
-                <p>{{ template.category }}</p>
-            </div>
-            {% endfor %}
+        <div class="form-group">
+            <label for="template_id">Choose Template</label>
+            <select name="template_id" id="template_id" required onchange="loadTemplateVariables()">
+                <option value="">-- Select a template --</option>
+                {% for template in templates %}
+                <option value="{{ template.id }}" 
+                        data-subject="{{ template.subject }}"
+                        data-body="{{ template.body_html|escapejs }}">
+                    {{ template.name }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
         
-        <h3 style="font-size: 14px; color: #7f8c8d; margin: 20px 0 10px 0;">District-Specific Templates</h3>
-        <div class="template-grid">
-            {% for template in templates.district_emails %}
-            <div class="template-card" 
-                 data-category="district-emails" 
-                 data-filename="{{ template.filename }}"
-                 onclick="selectTemplate(this)">
-                <h3>{{ template.name }}</h3>
-                <p>{{ template.category }}</p>
-            </div>
-            {% endfor %}
+        <div id="template-preview" style="display: none; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 4px;">
+            <h4 style="margin: 0 0 10px 0;">Subject: <span id="preview-subject"></span></h4>
+            <div id="variables-detected"></div>
         </div>
-        
-        <input type="hidden" name="template_category" id="template_category">
-        <input type="hidden" name="template_filename" id="template_filename">
     </div>
     
     <!-- Step 2: Select Recipient -->
@@ -232,18 +204,9 @@
             </select>
         </div>
         
-        <div class="form-group">
-            <label for="subject">Subject Line</label>
-            <input type="text" 
-                   id="subject" 
-                   name="subject" 
-                   value="Test Email from The 80% Bill"
-                   required>
-        </div>
-        
         <div id="variable-inputs">
             <p style="color: #7f8c8d; font-size: 14px;">
-                Variables will appear here based on selected template.
+                Select a template to see available variables.
             </p>
         </div>
     </div>
@@ -251,75 +214,83 @@
     <!-- Submit -->
     <div class="form-section">
         <button type="submit" class="btn btn-primary">📤 Send Test Email</button>
-        <button type="button" class="btn btn-secondary" onclick="previewEmail()">👁️ Preview</button>
     </div>
 </form>
 
-{% verbatim %}
 <script>
-let selectedTemplate = null;
-
-function selectTemplate(element) {
-    // Remove previous selection
-    document.querySelectorAll('.template-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-    
-    // Mark as selected
-    element.classList.add('selected');
-    
-    // Store selection
-    const category = element.dataset.category;
-    const filename = element.dataset.filename;
-    
-    document.getElementById('template_category').value = category;
-    document.getElementById('template_filename').value = filename;
-    
-    // Load template variables (you would fetch this via AJAX in production)
-    loadTemplateVariables(category, filename);
+function extractVariables(html) {
+    // Extract {{variable}} patterns from HTML
+    const regex = /\{\{(\w+)\}\}/g;
+    const matches = [];
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+        if (!matches.includes(match[1])) {
+            matches.push(match[1]);
+        }
+    }
+    return matches;
 }
 
-function loadTemplateVariables(category, filename) {
-    // Common variables based on template type
-    const commonVars = ['first_name', 'email', 'unsubscribe_link'];
-    const districtVars = ['district', 'state', 'representative_name', 'representative_phone', 'representative_email'];
+function loadTemplateVariables() {
+    const select = document.getElementById('template_id');
+    const option = select.options[select.selectedIndex];
     
-    let variables = [...commonVars];
-    
-    if (category === 'district-emails') {
-        variables = [...variables, ...districtVars];
+    if (!option.value) {
+        document.getElementById('template-preview').style.display = 'none';
+        return;
     }
     
-    // Add template-specific variables
-    if (filename === 'welcome.html') {
-        variables.push('action_link');
-    } else if (filename === 'newsletter.html') {
-        variables.push('subject', 'message_body', 'urgent_message', 'action_link');
-    } else if (filename === 'contact-representative.html') {
-        variables.push('bill_link');
-    } else if (filename === 'town-hall.html') {
-        variables.push('event_date', 'event_time', 'event_location', 'rsvp_link');
+    const subject = option.dataset.subject;
+    const bodyHtml = option.dataset.body;
+    
+    // Show preview
+    document.getElementById('template-preview').style.display = 'block';
+    document.getElementById('preview-subject').textContent = subject;
+    
+    // Extract variables from both subject and body
+    const subjectVars = extractVariables(subject);
+    const bodyVars = extractVariables(bodyHtml);
+    const allVars = [...new Set([...subjectVars, ...bodyVars])];
+    
+    // Show detected variables
+    const varsDiv = document.getElementById('variables-detected');
+    if (allVars.length > 0) {
+        varsDiv.innerHTML = '<p><strong>Variables detected:</strong> ' + 
+            allVars.map(v => '<span class="pill">{{' + v + '}}</span>').join(' ') + 
+            '</p>';
+    } else {
+        varsDiv.innerHTML = '<p style="color: #7f8c8d;">No variables in this template.</p>';
     }
     
     // Create input fields
     const container = document.getElementById('variable-inputs');
-    container.innerHTML = '<h3 style="font-size: 16px; margin: 0 0 15px 0;">Template Variables:</h3>';
+    container.innerHTML = '';
     
-    variables.forEach(varName => {
-        const div = document.createElement('div');
-        div.className = 'form-group';
-        div.innerHTML = `
-            <label for="var_${varName}">
-                ${varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                <span class="pill">{{${varName}}}</span>
-            </label>
-            <input type="text" 
-                   id="var_${varName}" 
-                   name="var_${varName}" 
-                   placeholder="Value for {{${varName}}}">
-        `;
-        container.appendChild(div);
-    });
+    if (allVars.length > 0) {
+        const heading = document.createElement('h3');
+        heading.style.fontSize = '16px';
+        heading.style.margin = '0 0 15px 0';
+        heading.textContent = 'Template Variables:';
+        container.appendChild(heading);
+        
+        allVars.forEach(varName => {
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label for="var_${varName}">
+                    ${varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    <span class="pill">{{${varName}}}</span>
+                </label>
+                <input type="text" 
+                       id="var_${varName}" 
+                       name="var_${varName}" 
+                       placeholder="Value for {{${varName}}}">
+            `;
+            container.appendChild(div);
+        });
+    } else {
+        container.innerHTML = '<p style="color: #7f8c8d;">This template has no variables to customize.</p>';
+    }
 }
 
 // Auto-fill variables from selected pledge
@@ -335,27 +306,50 @@ document.getElementById('pledge-select').addEventListener('change', function(e) 
     // Extract state from district (e.g., "CA-12" -> "CA")
     const state = district.includes('-') ? district.split('-')[0] : '';
     
-    // Fill in variables
-    if (document.getElementById('var_first_name')) {
-        document.getElementById('var_first_name').value = name.split(' ')[0] || '';
-    }
-    if (document.getElementById('var_email')) {
-        document.getElementById('var_email').value = email;
-    }
-    if (document.getElementById('var_district')) {
-        document.getElementById('var_district').value = district;
-    }
-    if (document.getElementById('var_state')) {
-        document.getElementById('var_state').value = state;
-    }
-    if (document.getElementById('var_representative_name')) {
-        document.getElementById('var_representative_name').value = rep;
-    }
+    // Fill in variables if they exist
+    const varMap = {
+        'first_name': name.split(' ')[0] || '',
+        'name': name,
+        'email': email,
+        'district': district,
+        'state': state,
+        'representative': rep,
+        'representative_name': rep
+    };
+    
+    Object.keys(varMap).forEach(varName => {
+        const input = document.getElementById('var_' + varName);
+        if (input) {
+            input.value = varMap[varName];
+        }
+    });
 });
 
-function previewEmail() {
-    alert('Preview feature coming soon! For now, send a test email to yourself.');
-}
+// Form validation
+document.getElementById('test-email-form').addEventListener('submit', function(e) {
+    const templateId = document.getElementById('template_id').value;
+    if (!templateId) {
+        e.preventDefault();
+        alert('Please select a template');
+        return;
+    }
+    
+    const recipientSource = document.querySelector('input[name="recipient_source"]:checked').value;
+    if (recipientSource === 'pledge') {
+        const pledgeId = document.getElementById('pledge-select').value;
+        if (!pledgeId) {
+            e.preventDefault();
+            alert('Please select a pledge signer');
+            return;
+        }
+    } else {
+        const manualEmail = document.getElementById('manual-email').value;
+        if (!manualEmail) {
+            e.preventDefault();
+            alert('Please enter a recipient email');
+            return;
+        }
+    }
+});
 </script>
-{% endverbatim %}
 {% endblock %}
