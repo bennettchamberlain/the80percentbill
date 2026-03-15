@@ -76,6 +76,22 @@
 </div>
 
 <div class="chart-section">
+    <h2>Failures Over Time</h2>
+    {% if failures_timeline.timeline %}
+        {% for date, count in failures_timeline.timeline.items %}
+        <div class="timeline-bar">
+            <div class="timeline-date">{{ date }}</div>
+            <div class="timeline-bar-fill" style="width: {% if summary.failed > 0 %}{% widthratio count summary.failed 100 %}{% else %}0{% endif %}%; background: #e74c3c;">
+                <span class="timeline-count">{{ count|intcomma }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #7f8c8d;">No failures.</p>
+    {% endif %}
+</div>
+
+<div class="chart-section">
     <h2>Status Breakdown</h2>
     {% for status, count in breakdown.breakdown.items %}
     <div class="breakdown-item">

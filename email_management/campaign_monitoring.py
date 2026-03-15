@@ -328,3 +328,37 @@ def search_recipients(campaign_id: int, query: str, limit: int = 50) -> List[dic
                 break
     
     return matching_recipients
+
+
+def get_campaign_failures_timeline(campaign_id: int) -> dict:
+    """
+    Get campaign failures over time (failed per day).
+    
+    Args:
+        campaign_id: ID of campaign
+        
+    Returns:
+        dict with daily failure counts
+    """
+    campaign = EmailCampaign.objects.get(id=campaign_id)
+    
+    # Get all failed recipients grouped by date
+    failed_recipients = campaign.recipients.filter(
+        status=CampaignRecipient.STATUS_FAILED,
+        failed_at__isnull=False
+    ).extra(
+        select={'date': 'DATE(failed_at)'}
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    
+    timeline = {}
+    for entry in failed_recipients:
+        date_str = entry['date'].strftime('%Y-%m-%d')
+        timeline[date_str] = entry['count']
+    
+    return {
+        'campaign_id': campaign_id,
+        'campaign_name': campaign.name,
+        'timeline': timeline,
+    }

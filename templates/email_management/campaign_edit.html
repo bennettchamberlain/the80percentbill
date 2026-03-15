@@ -40,6 +40,18 @@
         {% csrf_token %}
         
         <div class="form-group">
+            <label for="template_id">Template</label>
+            <select id="template_id" name="template_id">
+                {% for template in templates %}
+                <option value="{{ template.id }}" {% if template.id == campaign.template.id %}selected{% endif %}>
+                    {{ template.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="hint">Change the template used for this campaign</div>
+        </div>
+        
+        <div class="form-group">
             <label for="subject">Subject</label>
             <input type="text" id="subject" name="subject" value="{{ latest_version.subject|default:'' }}">
             <div class="hint">Leave empty to use template subject</div>

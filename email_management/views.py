@@ -12,7 +12,8 @@ from .campaign_batch import start_campaign, pause_campaign, resume_campaign, can
 from .campaign_versioning import update_campaign_content, get_version_stats
 from .campaign_monitoring import (
     get_campaign_summary, get_campaign_recipients, 
-    get_campaign_status_breakdown, get_campaign_progress_timeline
+    get_campaign_status_breakdown, get_campaign_progress_timeline,
+    get_campaign_failures_timeline
 )
 
 
@@ -345,12 +346,17 @@ def campaign_edit(request, campaign_id):
     
     if request.method == 'POST':
         # Get form data
+        template_id = request.POST.get('template_id')
         subject = request.POST.get('subject')
         html_body = request.POST.get('html_body')
         plain_body = request.POST.get('plain_body', '')
         daily_send_limit = request.POST.get('daily_send_limit')
         batch_size = request.POST.get('batch_size')
         notes = request.POST.get('notes', '')
+        
+        # Update template if changed
+        if template_id and int(template_id) != campaign.template_id:
+            campaign.template_id = int(template_id)
         
         # Update content (creates new version if already sending)
         if subject or html_body:
@@ -405,6 +411,9 @@ def campaign_analytics(request, campaign_id):
     # Get timeline data
     timeline = get_campaign_progress_timeline(campaign_id)
     
+    # Get failures timeline
+    failures_timeline = get_campaign_failures_timeline(campaign_id)
+    
     # Get status breakdown
     breakdown = get_campaign_status_breakdown(campaign_id)
     
@@ -412,6 +421,7 @@ def campaign_analytics(request, campaign_id):
         'campaign': campaign,
         'summary': summary,
         'timeline': timeline,
+        'failures_timeline': failures_timeline,
         'breakdown': breakdown,
     }
     
