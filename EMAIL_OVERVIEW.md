@@ -185,18 +185,75 @@ update_campaign_content(
 
 **Base URL:** `/email/campaigns/`
 
-### Pages (6 total)
+### Pages (7 total)
 
 **1. Campaigns List** (`/email/campaigns/`)
 - Table with: Name, Status, Audience, Sent, Progress, Created
 - Status badges (color-coded)
 - Progress bars
 - Click row → detail page
-- Create Campaign button
+- Create Campaign button (only shown when campaigns exist)
 
 **2. Create Wizard** (`/email/campaigns/create/`)
-- 4-step JavaScript wizard
-- Template selector
+- 4-step JavaScript wizard:
+  - Step 1: Campaign Details (name, description, template selector)
+  - Step 2: Audience Selection (segment or contact list)
+  - Step 3: Send Strategy (daily limit, batch size, start date)
+  - Step 4: Review and Launch
+- Creates campaign as 'draft' status
+- User clicks "Start" on detail page to begin
+
+**3. Campaign Overview** (`/email/campaigns/:id/`)
+- Real-time metrics dashboard
+- Configuration display
+- Conditional action buttons:
+  - Start (draft only)
+  - Pause/Resume (sending/paused)
+  - Cancel (active campaigns)
+  - Edit, View Recipients, Analytics
+
+**4. Recipients Page** (`/email/campaigns/:id/recipients/`)
+- Paginated table (50 per page)
+- Columns: Email, District, Status, Sent At, Version
+- Status filter (All, Pending, Sent, Failed)
+- Search by email or district
+
+**5. Edit Page** (`/email/campaigns/:id/edit/`)
+- Edit template dropdown (select different template)
+- Edit subject, HTML body (creates version when changed)
+- Edit daily limit, batch size
+- Version notes for audit trail
+- Warning when campaign has started sending
+
+**6. Analytics** (`/email/campaigns/:id/analytics/`)
+- Summary metrics cards
+- Timeline charts:
+  - Emails sent over time (blue bars)
+  - Failures over time (red bars)
+- Status breakdown
+- Version distribution
+
+**7. Template Upload** (`/email/templates/`)
+- Drag-and-drop HTML file upload (multiple files)
+- Instructions with metadata format
+- List of existing templates with:
+  - Name, subject, active status
+  - Variable tags (auto-detected)
+  - Campaign usage count
+  - Edit button → inline modal editor
+- Inline HTML editor:
+  - Full-screen modal (90% width, 85vh)
+  - Edit name, subject, HTML content
+  - Preview button → rendered HTML in overlay modal
+  - Save button → AJAX update
+- No redirect to Django admin (full inline experience)
+
+**8. Test Email** (`/email/test/`)
+- Send test emails to verify templates
+- Template dropdown (pulls from database)
+- Preview rendered HTML
+- Send to custom email address
+- Uses same EmailSendingService as campaigns
 - Audience targeting
 - Send strategy configuration
 - Review before creating
@@ -232,20 +289,94 @@ update_campaign_content(
 
 ## 📧 Email Sending
 
-### SMTP Configuration (Brevo)
+### Brevo HTTP API Configuration
 
+**Important:** Railway blocks outbound SMTP ports (25, 465, 587). We use Brevo's HTTP API instead (port 443/HTTPS).
+
+**API Endpoint:** `https://api.brevo.com/v3/smtp/email`
+
+**Configuration in Database (SMTPConfiguration model):**
 ```
-Server: smtp-relay.brevo.com
-Port: 587
-TLS: Enabled
-Login: a473e7001@smtp-brevo.com
-Password: x0zDsmTKfNtn7HrR
+name: Brevo SMTP Relay
+smtp_host: smtp-relay.brevo.com (not used for HTTP API)
+smtp_port: 587 (not used for HTTP API)
+smtp_password: xkeysib-YOUR_API_KEY_HERE  ← Brevo API key goes here
+from_email: info@the80percentbill.com
+from_name: The 80 Percent Bill
 ```
 
-**Setup command:**
-```bash
-python manage.py setup_brevo
+**Get API Key:** https://app.brevo.com/settings/keys/api
+
+**Update in Production:**
+```python
+# Via Railway shell
+smtp = SMTPConfiguration.objects.get(is_default=True)
+smtp.smtp_password = 'xkeysib-YOUR_ACTUAL_API_KEY'
+smtp.save()
 ```
+
+**Why HTTP API:**
+- ✅ Works on Railway (no port blocking)
+- ✅ Faster sending (HTTP vs SMTP handshake)
+- ✅ Better error reporting from API
+- ✅ 10-second timeout vs socket timeout
+
+### Template Management
+
+**Two Interfaces:**
+
+**1. Bulk Upload** (`/email/templates/`)
+- Drag-and-drop multiple HTML files
+- Metadata parsed from HTML comments
+- Variables auto-detected
+- Inline HTML editor with live preview
+
+**2. Django Admin** (`/admin/email_management/emailtemplate/`)
+- One-at-a-time creation
+- Full CRUD operations
+- Direct database access
+
+### Template Format
+
+**HTML File with Metadata Comment Block:**
+
+```html
+<!--
+SUBJECT: Welcome to The 80% Bill, {{first_name}}!
+NAME: Welcome Email (optional - defaults to filename)
+DESCRIPTION: Sent to new pledge signers (optional)
+-->
+<html>
+<body style="font-family: Arial, sans-serif;">
+  <h1>Hello {{first_name}}!</h1>
+  <p>Thank you for signing the pledge from {{district}}.</p>
+  <p>Your representative is {{representative}}.</p>
+</body>
+</html>
+```
+
+**Rules:**
+- Metadata block must be at very top of file (before `<html>`)
+- `SUBJECT` is required
+- `NAME` and `DESCRIPTION` are optional
+- Variables use `{{variable_name}}` syntax
+- Variables auto-detected from subject + body
+
+**Upload Process:**
+1. User drags HTML files into `/email/templates/`
+2. System parses metadata comment block
+3. Auto-detects all `{{variables}}`
+4. Generates plain text version (strips HTML)
+5. Stores in database as EmailTemplate
+6. Template immediately available in campaigns
+
+**Inline Editor:**
+- Click "Edit" button on any template
+- Full-screen modal (90% width, 85vh height)
+- Edit: name, subject, HTML content
+- "Preview" button → opens second modal with rendered HTML
+- "Save" button → AJAX update to database
+- Auto-regenerates plain text and re-detects variables
 
 ### Template Variables
 
@@ -275,7 +406,7 @@ Body: Hi {{first_name}}, your representative {{representative}} needs to hear fr
 2. **Check daily limit** (count today's sends)
 3. **Process in batches** (default: 50 emails per batch)
 4. **Render template** with recipient variables
-5. **Send via SMTP** (Brevo relay)
+5. **Send via Brevo HTTP API** (JSON payload)
 6. **Update status** (sent or failed)
 7. **Create EmailLog** record
 8. **Retry failed** (up to 3 attempts)
@@ -461,6 +592,16 @@ cancelled: red
 
 ## 🔐 Production Deployment
 
+### Railway Platform Constraints
+
+**IMPORTANT:** Railway blocks outbound SMTP ports (25, 465, 587) to prevent spam. The system uses **Brevo HTTP API** instead (port 443/HTTPS).
+
+**Email Service Implementation:**
+- File: `email_management/email_service.py`
+- Method: HTTP POST to `https://api.brevo.com/v3/smtp/email`
+- Authentication: API key in `smtp_password` field
+- No SMTP socket connection required
+
 ### Database Migration Strategy
 
 **Problem:** Production has admin.0001_initial applied before email_management app existed, creating circular dependency.
@@ -476,6 +617,50 @@ cancelled: red
 6. Start Gunicorn server
 
 **Files:**
+- `railway_deploy.sh` - Custom deployment script
+- `Procfile` - Railway start command: `web: bash railway_deploy.sh`
+
+**Safety:**
+- ✅ Idempotent (checks before creating)
+- ✅ Zero data loss (only creates new tables)
+- ✅ Safe for re-runs
+
+### Initial Production Setup
+
+**1. Get Brevo API Key:**
+- Visit: https://app.brevo.com/settings/keys/api
+- Copy API key (starts with `xkeysib-`)
+
+**2. Update SMTP Configuration (via Railway shell):**
+```python
+from email_management.models import SMTPConfiguration
+
+smtp = SMTPConfiguration.objects.get(is_default=True)
+smtp.smtp_password = 'xkeysib-YOUR_ACTUAL_API_KEY'
+smtp.save()
+```
+
+**3. Create Superuser (via Railway shell):**
+```python
+from email_management.models import EmailUser
+
+EmailUser.objects.create_superuser(
+    username='admin',
+    email='admin@the80percentbill.com',
+    password='YourSecurePassword'
+)
+```
+
+**Note:** Must use `EmailUser.objects.create_superuser()` because `AUTH_USER_MODEL = 'email_management.EmailUser'`
+
+**4. Verify Sender Email:**
+```python
+from email_management.models import SenderEmail
+
+# Should already exist from migrations
+sender = SenderEmail.objects.get(email='info@the80percentbill.com')
+print(f"Verified: {sender.is_verified}, Active: {sender.is_active}")
+```
 - `railway_deploy.sh` - Custom deployment script
 - `Procfile` - Railway start command: `web: bash railway_deploy.sh`
 
@@ -672,6 +857,61 @@ failures = get_failed_recipients_details(campaign_id=1)
 - ✅ Zero data loss
 - ✅ Campaign UI operational
 - ✅ Ready for first campaign sends
+
+---
+
+## 🆕 Recent Updates (March 15, 2026)
+
+### Brevo HTTP API Migration
+**Change:** Switched from SMTP to Brevo HTTP API  
+**Reason:** Railway blocks outbound SMTP ports (25, 465, 587)  
+**Impact:** Email sending now uses port 443 (HTTPS)  
+**Action Required:** Update `smtp_password` field with Brevo API key  
+**Commit:** `6d434e6`
+
+### HTML Template Upload System
+**Feature:** Bulk template upload with drag-and-drop  
+**Interface:** `/email/templates/`  
+**Metadata Format:** HTML comments at top of file  
+**Variables:** Auto-detected from `{{variable}}` syntax  
+**Benefits:** Designer-friendly, no CSV escaping, bulk import  
+**Commit:** `5893c13`
+
+### Inline HTML Editor
+**Feature:** Full-screen modal editor with live preview  
+**Actions:** Edit name, subject, HTML content  
+**Preview:** Second modal overlays editor, shows rendered HTML  
+**Save:** AJAX update, auto-regenerates plain text  
+**Benefits:** No Django admin redirect, inline experience  
+**Commit:** `7e1f949`
+
+### Django 6.0 Compatibility
+**Issue:** `format_html()` requires format placeholders in Django 6.0  
+**Fix:** Changed to `mark_safe()` for static HTML badges  
+**Files:** `email_management/admin.py`  
+**Affected:** EmailUser and SenderEmail admin pages  
+**Commit:** `e04ca6e`
+
+### Test Email Page Migration
+**Change:** Moved from file-based to database templates  
+**Impact:** Test email now uses same templates as campaigns  
+**Removed:** 5 hardcoded HTML files, 4 upload routes  
+**Deprecated:** `template_loader.py`  
+**Benefits:** Single source of truth for templates  
+**Commit:** `964cd4d`
+
+### Template Instructions Refinement
+**Change:** Condensed upload instructions  
+**Format:** Clear metadata example, variable syntax  
+**Spacing:** Reduced vertical height (line-height: 1.4)  
+**Escaping:** Wrapped variables in `{% verbatim %}`  
+**Commit:** `537320e`
+
+### UI Polish
+**Change:** Removed duplicate "Create Campaign" button  
+**Logic:** Only show in header when campaigns exist  
+**Empty State:** Keeps its own button for first-time users  
+**Commit:** `3dad5fe`
 
 ---
 
