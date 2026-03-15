@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
+from django.db import models
 from .models import (
     EmailUser, SMTPConfiguration, EmailTemplate, EmailCampaign, EmailLog,
     CampaignRecipient, CampaignVersion, Segment, ContactList, Contact
@@ -399,7 +400,13 @@ def campaign_create(request):
         return redirect('campaign_detail', campaign_id=campaign.id)
     
     # GET request - show wizard
-    templates = EmailTemplate.objects.filter(user=user)
+    # Show all active templates (user-specific OR shared templates with user=None)
+    templates = EmailTemplate.objects.filter(
+        is_active=True
+    ).filter(
+        models.Q(user=user) | models.Q(user=None)
+    ).order_by('-created_at')
+    
     segments = Segment.objects.filter(created_by=user)
     contact_lists = ContactList.objects.filter(created_by=user)
     
@@ -532,7 +539,12 @@ def campaign_edit(request, campaign_id):
     # Get latest version for editing
     latest_version = campaign.versions.order_by('-created_at').first()
     
-    templates = EmailTemplate.objects.filter(user=user)
+    # Show all active templates (user-specific OR shared templates with user=None)
+    templates = EmailTemplate.objects.filter(
+        is_active=True
+    ).filter(
+        models.Q(user=user) | models.Q(user=None)
+    ).order_by('-created_at')
     
     context = {
         'campaign': campaign,
